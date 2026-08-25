@@ -83,62 +83,62 @@ do not assume a default command.
 
 ### 0.1 Repository, rules, and CI (`platform-foundation`)
 
-- [ ] **T0.01 — Initialise the git repository and commit hygiene** · `S` · deps: Checkpoint D
+- [x] **T0.01 — Initialise the git repository and commit hygiene** · `S` · deps: Checkpoint D
   - **Do:** `git init`, first commit, `main` as default. Add `.gitignore` covering `node_modules/`, `dist/`, `.next/`, `.env*` (except `.env.example`), `*.pem`, `*.key`, `__pycache__/`, `.venv/`. Install husky + lint-staged + commitlint (conventional commits).
   - **Accept:** A commit touching `.env` is impossible; a non-conventional commit message is rejected; branch protection on `main` requires status checks and forbids force-push.
   - **Verify:** Attempt to commit a file containing `STRIPE_SECRET_KEY=sk_live_x` — hook blocks it. Attempt `git commit -m "wip"` — commitlint rejects it.
   - **Files:** `.gitignore`, `.husky/*`, `commitlint.config.cjs`, `package.json`
   - **Skills:** git-workflow-and-versioning, security-and-hardening
-- [ ] **T0.02 — Author the seven missing `.agents/references/` files** · `M` · deps: T0.01
+- [x] **T0.02 — Author the seven missing `.agents/references/` files** · `M` · deps: T0.01
   - **Do:** Create `definition-of-done.md` (verbatim from `plan.md` §5), `security-checklist.md`, `performance-checklist.md`, `accessibility-checklist.md`, `observability-checklist.md`, `testing-patterns.md`, `orchestration-patterns.md`. Every skill's `See Also` currently points at a missing file.
   - **Accept:** All seven exist; each contains the checklist its citing skill promises, not a stub; the DoD matches `plan.md` §5 exactly.
   - **Verify:** `grep -roh '\.\./\.\./references/[a-z-]*\.md' .agents/skills | sort -u` — every path resolves to an existing file.
   - **Files:** `.agents/references/*.md` (7 files)
   - **Skills:** documentation-and-adrs, using-agent-skills
-- [ ] **T0.03 — Author `CLAUDE.md` and the project map** · `S` · deps: T0.04
+- [x] **T0.03 — Author `CLAUDE.md` and the project map** · `S` · deps: T0.04
   - **Do:** Write the rules file: tech stack with versions, full commands, code conventions with one real example snippet, and Always/Ask-first/Never boundaries. Add a hierarchical project map so future sessions load one module's context rather than the whole spec.
   - **Accept:** Covers stack, commands, conventions, boundaries; boundaries include "ask before schema changes", "never commit secrets", "never add a dependency without a bundle/audit check".
   - **Verify:** Every command in the file runs successfully from a clean clone.
   - **Files:** `CLAUDE.md`, `docs/project-map.md`
   - **Skills:** context-engineering
-- [ ] **T0.04 — Monorepo scaffold and canonical commands** · `M` · deps: T0.01, T-D.01, T-D.03
+- [x] **T0.04 — Monorepo scaffold and canonical commands** · `M` · deps: T0.01, T-D.01, T-D.03
   - **Do:** pnpm workspaces + Turborepo. Create `apps/api`, `apps/matching`, `apps/admin`, `apps/mobile-consumer`, `apps/mobile-driver`, `packages/contracts`, `packages/ui`, `packages/config`. Pin the package manager in `packageManager`. Set root scripts: `lint`, `typecheck`, `test`, `test:integration`, `build`.
   - **Accept:** One lockfile at the workspace root; `pnpm -w lint typecheck test build` succeeds on the empty scaffold; Python app has its own `pyproject.toml` + pinned toolchain.
   - **Verify:** `pnpm install --frozen-lockfile` from a clean checkout, then `pnpm -w build`.
   - **Files:** `pnpm-workspace.yaml`, `turbo.json`, `package.json`, `apps/*/package.json`
   - **Skills:** api-and-interface-design, ci-cd-and-automation
-- [ ] **T0.05 — Write one `SPEC-<module>.md` per capability-map module** · `M` · deps: Checkpoint D
+- [x] **T0.05 — Write one `SPEC-<module>.md` per capability-map module** · `M` · deps: Checkpoint D
   - **Do:** Fourteen specs, one per module id, each covering all six core areas: objective, commands, structure, code style, testing strategy, boundaries — plus success criteria and open questions.
   - **Accept:** Every spec traces to a module id in the approved map; no spec covers two modules; success criteria are testable conditions, not adjectives.
   - **Verify:** Reviewed and approved module by module before that module's first implementation task starts.
   - **Files:** `docs/SPEC-<module-id>.md` (14 files)
   - **Skills:** spec-driven-development
 
-- [ ] **T0.06 — Local development stack via docker-compose** · `S` · deps: T0.04
+- [x] **T0.06 — Local development stack via docker-compose** · `S` · deps: T0.04
   - **Do:** `docker-compose.dev.yml` with `postgis/postgis:16-3.4`, `redis:7`, LocalStack (S3), and Mailhog. Add a `docker-compose.test.yml` variant with ephemeral volumes for CI-equivalent local runs.
   - **Accept:** `docker compose -f docker-compose.dev.yml up` yields a reachable DB with the PostGIS extension available, a reachable Redis 7, and an S3 endpoint.
   - **Verify:** `psql -c 'SELECT PostGIS_Version();'` and `redis-cli ping` both succeed against the compose stack.
   - **Files:** `docker-compose.dev.yml`, `docker-compose.test.yml`
   - **Skills:** ci-cd-and-automation
-- [ ] **T0.07 — Zod-validated configuration loader and `.env.example`** · `S` · deps: T0.04, T-D.06
+- [x] **T0.07 — Zod-validated configuration loader and `.env.example`** · `S` · deps: T0.04, T-D.06
   - **Do:** `packages/config` exposes a parsed, typed config object. Validate every variable from TRD §20 at process start and exit non-zero on a missing or malformed required value. Commit `.env.example` with placeholders only.
   - **Accept:** Booting without `DATABASE_URL` fails immediately with a readable message naming the variable; `CORS_ALLOWED_ORIGINS` rejects `*` when `NODE_ENV=production`; no real value appears in `.env.example`.
   - **Verify:** Unit test per required variable asserting the boot failure; `grep -E 'sk_live|whsec_[A-Za-z0-9]{10}' .env.example` returns nothing.
   - **Files:** `packages/config/src/env.ts`, `packages/config/src/env.test.ts`, `.env.example`
   - **Skills:** security-and-hardening, api-and-interface-design
-- [ ] **T0.08 — CI quality-gate pipeline** · `M` · deps: T0.04
+- [x] **T0.08 — CI quality-gate pipeline** · `M` · deps: T0.04
   - **Do:** `.github/workflows/ci.yml` running lint → typecheck → unit tests → build → dependency audit as parallel jobs with dependency caching, plus a `pytest` + `ruff` + `mypy` job for the matching service. Path filters so a mobile-only change skips the Python job.
   - **Accept:** Runs on every PR and every push to `main`; a lint error, a type error, a failing test, or a high-severity advisory each fail the run; total wall time under 10 minutes.
   - **Verify:** Open a scratch PR that introduces one type error — the run fails at typecheck and merge is blocked.
   - **Files:** `.github/workflows/ci.yml`
   - **Skills:** ci-cd-and-automation
-- [ ] **T0.09 — CI integration-test job with PostGIS** · `S` · deps: T0.08, T0.11
+- [x] **T0.09 — CI integration-test job with PostGIS** · `S` · deps: T0.08, T0.11
   - **Do:** Add a job with a `postgis/postgis:16-3.4` service container and a Redis service. Run `prisma migrate deploy`, then the API and matching integration suites. Credentials come from GitHub Secrets, never literals.
   - **Accept:** Migrations apply from empty on every run; integration tests run against a real database, not a mock; no credential appears in the workflow file.
   - **Verify:** The job passes on a PR containing a migration; deliberately break a migration and confirm the job fails.
   - **Files:** `.github/workflows/ci.yml`
   - **Skills:** ci-cd-and-automation, test-driven-development
-- [ ] **T0.10 — Coverage thresholds enforced in CI** · `S` · deps: T0.08
+- [x] **T0.10 — Coverage thresholds enforced in CI** · `S` · deps: T0.08
   - **Do:** Configure Jest and pytest coverage gates per TRD §15.3 — API 80% line / 75% branch, matching 90/85, mobile 70/65 — and fail the build on a drop against changed files.
   - **Accept:** Merging code that lowers a module below its threshold is impossible; the report is uploaded as a CI artefact.
   - **Verify:** Add an untested exported function to `apps/api` and confirm the coverage gate fails the run.
@@ -146,10 +146,10 @@ do not assume a default command.
   - **Skills:** ci-cd-and-automation, test-driven-development
 
 ### ✅ Checkpoint 0-A — the gates exist before the code does
-- [ ] CI green on the empty scaffold; every gate demonstrably blocks a bad change
-- [ ] All seven `.agents/references/` files exist and resolve
-- [ ] `CLAUDE.md` commands all run from a clean clone
-- [ ] Branch protection active on `main`
+- [x] CI green on the empty scaffold; every gate demonstrably blocks a bad change
+- [x] All seven `.agents/references/` files exist and resolve
+- [x] `CLAUDE.md` commands all run from a clean clone
+- [x] Branch protection active on `main`
 
 ### 0.2 Schema, contracts, and the observability baseline (`platform-foundation`)
 
