@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# pre-commit: block secrets first, then lint staged files
+sh "$(dirname "$0")/pre-commit-secret-scan"
+pnpm exec lint-staged

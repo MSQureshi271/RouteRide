@@ -1,0 +1,17 @@
+{
+  "name": "@routeride/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RouteRide REST API and WebSocket server (NestJS + Fastify adapter)",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --passWithNoTests --coverage",
+    "test:integration": "jest --config jest.integration.config.ts --passWithNoTests --coverage"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

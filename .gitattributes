@@ -1,0 +1,33 @@
+# RouteRide — Git line-ending normalisation
+# Ensures consistent LF in the repository regardless of OS.
+# See: https://git-scm.com/docs/gitattributes
+
+* text=auto eol=lf
+
+# Binary files — do not touch
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tar binary
+
+# docx files should not be line-ending normalised
+*.docx binary
+*.xlsx binary
+*.pptx binary
+
+# Force LF for shell scripts regardless of checkout platform
+*.sh text eol=lf
+
+# Husky hooks — always LF (sh scripts)
+.husky/* text eol=lf

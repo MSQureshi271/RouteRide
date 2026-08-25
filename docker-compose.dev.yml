@@ -1,0 +1,80 @@
+---
+# RouteRide — Local Development Stack
+# Usage: docker compose -f docker-compose.dev.yml up -d
+# Verify: psql $DATABASE_URL -c 'SELECT PostGIS_Version();'
+#         redis-cli -u redis://localhost:6379 ping
+#         curl http://localhost:4566/_localstack/health
+
+services:
+  # ─── PostgreSQL 16 + PostGIS 3.4 ───────────────────────────────────────────
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: routeride_dev
+      POSTGRES_USER: routeride
+      POSTGRES_PASSWORD: changeme
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U routeride -d routeride_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis 7 (Socket.IO adapter + BullMQ) ──────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ─── LocalStack (S3 for document uploads) ───────────────────────────────────
+  localstack:
+    image: localstack/localstack:3
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3
+      DEFAULT_REGION: ap-south-1
+      AWS_DEFAULT_REGION: ap-south-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      DEBUG: "0"
+    volumes:
+      - localstack_dev_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # ─── Mailhog (SMTP / email preview) ─────────────────────────────────────────
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8025"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+  localstack_dev_data:

@@ -1,0 +1,95 @@
+# ─── Node ────────────────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ─── Build outputs ────────────────────────────────────────────────────────────
+dist/
+build/
+.next/
+.nuxt/
+out/
+.output/
+*.tsbuildinfo
+
+# ─── Secrets — NEVER commit these ────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.development
+.env.staging
+.env.production
+# .env.example IS committed (placeholder values only)
+
+# ─── Cryptographic keys ───────────────────────────────────────────────────────
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# ─── Python (apps/matching) ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.egg-info/
+dist/
+build/
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+.docker/
+
+# ─── OS artefacts ────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ─── IDE ─────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+# Allow shared VS Code settings
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# ─── Testing ─────────────────────────────────────────────────────────────────
+coverage/
+lcov.info
+.nyc_output/
+
+# ─── Turborepo ───────────────────────────────────────────────────────────────
+.turbo/
+
+# ─── Expo / React Native ─────────────────────────────────────────────────────
+.expo/
+expo-env.d.ts
+*.jks
+*.keystore
+*.mobileprovision
+
+# ─── Sentry ──────────────────────────────────────────────────────────────────
+.sentryclirc
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*

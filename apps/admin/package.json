@@ -1,0 +1,16 @@
+{
+  "name": "@routeride/admin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RouteRide Admin Panel (Next.js)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --passWithNoTests --coverage"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
