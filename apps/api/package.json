@@ -10,15 +10,20 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests --coverage",
-    "test:integration": "jest --config jest.integration.config.ts --passWithNoTests --coverage"
+    "test:integration": "jest --config jest.integration.config.ts --passWithNoTests --coverage",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@prisma/client": "^7.10.0"
+  },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.13.5",
     "eslint": "^9.21.0",
     "jest": "^29.7.0",
+    "prisma": "^7.10.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.7.3"
   }
