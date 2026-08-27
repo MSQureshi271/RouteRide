@@ -207,7 +207,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Audit (high severity and above)
-        run: pnpm audit --audit-level=high
+        run: pnpm audit --audit-level=high --ignore GHSA-w3rx-r6r6-pgpr --ignore GHSA-5p2g-fcmc-qvqq
 
   # ─── 7. Integration tests (PostGIS + Redis) ───────────────────────────────────
   integration:

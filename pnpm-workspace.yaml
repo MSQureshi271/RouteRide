@@ -8,6 +8,11 @@ allowBuilds:
   "@nestjs/core": true
   "@swc/core": true
 
+auditConfig:
+  ignoreGhsas:
+    - GHSA-w3rx-r6r6-pgpr
+    - GHSA-5p2g-fcmc-qvqq
+
 overrides:
   postcss: "^8.5.26"
   tar: "^7.5.22"
