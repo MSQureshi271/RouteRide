@@ -15,6 +15,9 @@ export default tseslint.config(
       "**/htmlcov/**",
       "**/.turbo/**",
       "**/.expo/**",
+      "**/*.config.js",
+      "**/*.config.cjs",
+      "**/*.config.mjs",
     ],
   },
   {

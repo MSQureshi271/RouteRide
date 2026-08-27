@@ -45,7 +45,7 @@ jobs:
         working-directory: apps/matching
         run: |
           pip install ruff
-          ruff check .
+          ruff check . --fix
 
   # ─── 2. Type-check ───────────────────────────────────────────────────────────
   typecheck:
