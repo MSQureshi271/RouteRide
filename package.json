@@ -28,12 +28,6 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.25.0"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp"
-    ]
-  },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [
       "eslint --fix --max-warnings=0",
