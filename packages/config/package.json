@@ -4,22 +4,23 @@
   "private": true,
   "description": "Shared configuration: Zod-validated env loader, Pino logger, OTel tracing initialiser",
   "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
     "./logger": {
-      "import": "./dist/logger.js",
-      "require": "./dist/logger.cjs",
-      "types": "./dist/logger.d.ts"
+      "types": "./dist/logger.d.ts",
+      "import": "./dist/logger.mjs",
+      "require": "./dist/logger.js"
     },
     "./tracing": {
-      "import": "./dist/tracing.js",
-      "require": "./dist/tracing.cjs",
-      "types": "./dist/tracing.d.ts"
+      "types": "./dist/tracing.d.ts",
+      "import": "./dist/tracing.mjs",
+      "require": "./dist/tracing.js"
     }
   },
   "scripts": {
