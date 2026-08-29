@@ -6,9 +6,10 @@ Rules:
  - Coordinate rounding (2 decimal places for lat/lng)
  - Redaction for sensitive keys
 """
+import logging
 import os
-import structlog
 from typing import Any, MutableMapping
+import structlog
 
 COORD_KEYS = {"lat", "lng", "latitude", "longitude"}
 SENSITIVE_KEYS = {"password", "token", "secret", "authorization", "cookie", "otp", "key"}
@@ -39,6 +40,7 @@ def redact_sensitive_processor(
 def configure_logging(service_name: str = "routeride-matching") -> None:
     """Configure structlog for production JSON logging."""
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    min_level: int = getattr(logging, log_level, logging.INFO)
 
     structlog.configure(
         processors=[
@@ -49,11 +51,7 @@ def configure_logging(service_name: str = "routeride-matching") -> None:
             round_coordinates_processor,
             structlog.processors.JSONRenderer(),
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(
-            getattr(structlog.stdlib, log_level, structlog.stdlib.INFO)
-            if hasattr(structlog, "stdlib")
-            else 20
-        ),
+        wrapper_class=structlog.make_filtering_bound_logger(min_level),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
