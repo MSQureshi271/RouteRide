@@ -47,7 +47,7 @@ import {
 import { NotificationListResponseSchema } from "./modules/notifications.js";
 import { ErrorEnvelopeSchema } from "./common/envelope.js";
 
-export function generateOpenApiDocument(): Record<string, unknown> {
+export function generateOpenApiDocument(): ReturnType<typeof createDocument> {
   return createDocument({
     openapi: "3.1.0",
     info: {

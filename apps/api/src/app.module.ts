@@ -20,6 +20,7 @@ import { ThrottlerStorageRedisService } from "@nest-lab/throttler-storage-redis"
 import { LoggerModule } from "nestjs-pino";
 import { getEnv } from "@routeride/config";
 
+import type { IncomingMessage } from "node:http";
 import { HealthModule } from "./health/health.module.js";
 import { MetricsModule } from "./metrics/metrics.module.js";
 import { RequestIdMiddleware } from "./common/request-id.middleware.js";
@@ -36,8 +37,10 @@ import { GeneralRateLimitGuard } from "./common/rate-limit.js";
             return { method: req.method, url: req.url, id: req.id };
           },
         },
-        customProps: (req: { [key: string]: unknown }) => ({
-          requestId: (req["requestId"] as string) ?? "unknown",
+        customProps: (req: IncomingMessage) => ({
+          requestId:
+            (req as IncomingMessage & { requestId?: string }).requestId ??
+            "unknown",
           service: "routeride-api",
         }),
         redact: {
@@ -57,7 +60,7 @@ import { GeneralRateLimitGuard } from "./common/rate-limit.js";
           censor: "[REDACTED]",
         },
         autoLogging: {
-          ignore: (req: { url?: string }) => req.url === "/health",
+          ignore: (req: IncomingMessage) => req.url === "/health",
         },
       },
     }),

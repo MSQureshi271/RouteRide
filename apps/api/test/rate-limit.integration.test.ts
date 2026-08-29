@@ -55,15 +55,14 @@ describe("Rate Limiting Guards (TRD §12.4)", () => {
     }
   }
 
-  const dummyOptions = {} as unknown as Parameters<
-    typeof AuthRateLimitGuard.prototype.getTracker
-  >[0];
-  const dummyStorage = {} as unknown as Parameters<
-    typeof AuthRateLimitGuard.prototype.getTracker
-  >[0];
-  const dummyReflector = {
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  const dummyOptions: any = {};
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  const dummyStorage: any = {};
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  const dummyReflector: any = {
     getAllAndOverride: () => undefined,
-  } as unknown as Parameters<typeof AuthRateLimitGuard.prototype.getTracker>[0];
+  };
 
   it("tracks auth limit by IP (5 / IP / 10 min)", async () => {
     const guard = new TestAuthGuard(dummyOptions, dummyStorage, dummyReflector);
