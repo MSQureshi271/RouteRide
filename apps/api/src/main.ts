@@ -83,7 +83,7 @@ async function bootstrap(): Promise<void> {
   );
 
   // ── CORS ────────────────────────────────────────────────────────────────────
-  const allowedOrigins = env.CORS_ALLOWED_ORIGINS.split(",").map((o) =>
+  const allowedOrigins = env.CORS_ALLOWED_ORIGINS.split(",").map((o: string) =>
     o.trim(),
   );
   app.enableCors({
