@@ -2,17 +2,30 @@ packages:
   - "apps/*"
   - "packages/*"
 
+onlyBuiltDependencies:
+  - "@nestjs/core"
+  - "@prisma/client"
+  - "@prisma/engines"
+  - "@sentry/node-cpu-profiler"
+  - "@swc/core"
+  - esbuild
+  - msgpackr-extract
+  - prisma
+  - protobufjs
+  - sharp
+  - workerd
+
 allowBuilds:
-  esbuild: true
-  sharp: true
   "@nestjs/core": true
-  "@swc/core": true
-  prisma: true
   "@prisma/client": true
   "@prisma/engines": true
-  protobufjs: true
   "@sentry/node-cpu-profiler": true
+  "@swc/core": true
+  esbuild: true
   msgpackr-extract: true
+  prisma: true
+  protobufjs: true
+  sharp: true
   workerd: true
 
 overrides:
