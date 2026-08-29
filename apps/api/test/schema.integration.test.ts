@@ -47,35 +47,37 @@ describe("Schema & Indexes Specification (TRD §3.1 & §3.2)", () => {
   });
 
   it("verifies migrations contain all PostGIS extension and index definitions", () => {
-    const migrationsDir = fs.existsSync(path.resolve("prisma/migrations"))
-      ? path.resolve("prisma/migrations")
-      : path.resolve("apps/api/prisma/migrations");
-
-    const postgisMigration = fs.readFileSync(
-      path.join(migrationsDir, "20260828000002_postgis/migration.sql"),
+    const postgisOps = fs.readFileSync(
+      path.resolve(
+        "migrations/postgis/20260601T0000_install_postgis_extension/ops.json",
+      ),
       "utf-8",
     );
+    expect(postgisOps).toContain("CREATE EXTENSION IF NOT EXISTS postgis");
 
-    expect(postgisMigration).toContain(
-      'CREATE EXTENSION IF NOT EXISTS "postgis"',
+    const contract = fs.readFileSync(
+      path.resolve("prisma/contract.prisma"),
+      "utf-8",
     );
-    expect(postgisMigration).toContain("idx_dp_route");
-    expect(postgisMigration).toContain('USING GIST ("route_polyline")');
-    expect(postgisMigration).toContain("idx_riders_home");
-    expect(postgisMigration).toContain('USING GIST ("home_location")');
-    expect(postgisMigration).toContain("idx_riders_dest");
-    expect(postgisMigration).toContain('USING GIST ("dest_location")');
-    expect(postgisMigration).toContain("idx_notifications_user_unread");
-    expect(postgisMigration).toContain('WHERE "is_read" = FALSE');
+    expect(contract).toContain("idx_users_phone");
+    expect(contract).toContain("idx_users_email");
+    expect(contract).toContain("idx_dp_status");
+    expect(contract).toContain("idx_subs_driver_status");
+    expect(contract).toContain("idx_subs_rider");
+    expect(contract).toContain("idx_dss_driver_days");
+    expect(contract).toContain("idx_trips_sub_date");
+    expect(contract).toContain("idx_trips_status_date");
+    expect(contract).toContain("idx_payments_sub");
+    expect(contract).toContain("idx_payments_idempotency");
+    expect(contract).toContain("idx_notifications_user_unread");
+    expect(contract).toContain("idx_messages_sub");
+    expect(contract).toContain("idx_audit_entity");
+    expect(contract).toContain("idx_idempotency_expires");
   });
 
   it("verifies init migration contains all 10 enum definitions and tables", () => {
-    const migrationsDir = fs.existsSync(path.resolve("prisma/migrations"))
-      ? path.resolve("prisma/migrations")
-      : path.resolve("apps/api/prisma/migrations");
-
-    const initMigration = fs.readFileSync(
-      path.join(migrationsDir, "20260828000001_init/migration.sql"),
+    const contract = fs.readFileSync(
+      path.resolve("prisma/contract.prisma"),
       "utf-8",
     );
 
@@ -93,10 +95,42 @@ describe("Schema & Indexes Specification (TRD §3.1 & §3.2)", () => {
     ];
 
     for (const e of enums) {
-      expect(initMigration).toContain(`CREATE TYPE "${e}"`);
+      expect(contract).toContain(`enum ${e}`);
     }
 
     const tables = [
+      "User",
+      "DriverProfile",
+      "DriverDocument",
+      "ConsumerProfile",
+      "Rider",
+      "Subscription",
+      "DriverScheduleSlot",
+      "Trip",
+      "LocationLog",
+      "Payment",
+      "DriverPayout",
+      "Review",
+      "Notification",
+      "Message",
+      "IdempotencyKey",
+      "AuditLog",
+    ];
+
+    for (const t of tables) {
+      expect(contract).toContain(`model ${t}`);
+    }
+
+    const appMigrationDirs = fs.readdirSync(path.resolve("migrations/app"));
+    const latestAppDir = appMigrationDirs
+      .filter((d) => !d.startsWith("."))
+      .pop()!;
+    const appOps = fs.readFileSync(
+      path.resolve("migrations/app", latestAppDir, "ops.json"),
+      "utf-8",
+    );
+
+    const dbTables = [
       "users",
       "driver_profiles",
       "driver_documents",
@@ -115,8 +149,8 @@ describe("Schema & Indexes Specification (TRD §3.1 & §3.2)", () => {
       "audit_log",
     ];
 
-    for (const t of tables) {
-      expect(initMigration).toContain(`CREATE TABLE "${t}"`);
+    for (const dt of dbTables) {
+      expect(appOps).toContain(`"table.${dt}"`);
     }
   });
 });

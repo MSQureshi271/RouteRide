@@ -389,6 +389,7 @@ model Notification {
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, isRead], map: "idx_notifications_user_unread")
   @@map("notifications")
 }
 

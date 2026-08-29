@@ -160,7 +160,7 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm --filter @routeride/api prisma:emit
           # Apply migration plan idempotently
-          pnpm --filter @routeride/api prisma orm migrate deploy || exit 1
+          pnpm --filter @routeride/api prisma:migrate || exit 1
           echo "Database migrations applied successfully"
 
       - name: Log in to Amazon ECR
