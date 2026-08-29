@@ -1,0 +1,44 @@
+# Version control & tooling
+.git
+.gitignore
+.gitattributes
+.husky
+.turbo
+
+# Environment variables & secrets
+.env*
+!*.example
+*.pem
+*.key
+*.crt
+
+# Test & coverage artifacts
+coverage/
+*.lcov
+test/
+tests/
+__tests__/
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+.pytest_cache/
+
+# Dependencies & build outputs (rebuilt in container)
+node_modules/
+dist/
+build/
+.next/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+env/
+
+# Documentation & logs
+docs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+tasks/

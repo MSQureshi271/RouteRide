@@ -20,7 +20,8 @@
     "test": "jest --passWithNoTests --coverage"
   },
   "dependencies": {
-    "zod": "^3.25.74"
+    "zod": "^4.4.3",
+    "zod-openapi": "^6.0.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

@@ -1,0 +1,522 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// RouteRide Prisma Schema — v1
+// Database: PostgreSQL 16 + PostGIS 3.4 (via ADR-002)
+//
+// Rules:
+//  - All timestamps: DateTime @db.Timestamptz (enforced via @db.Timestamptz)
+//  - All money:      Int (integer cents / paisas)
+//  - Geography cols: Unsupported("geography(...)") — raw SQL only (ADR-002)
+//  - GIST indexes:   declared here so introspection is aware; raw DDL is in
+//                    migrations/20260828000002_postgis/migration.sql
+//  - Partial indexes: NOT expressible in Prisma; live in the postgis migration
+// ═══════════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [uuidOssp(map: "uuid-ossp"), postgis]
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  CONSUMER
+  DRIVER
+  ADMIN
+  INSTITUTION_ADMIN
+  FLEET_ADMIN
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum DriverStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+  REJECTED
+}
+
+enum VerifyTier {
+  BASIC
+  ENHANCED
+  ELITE
+}
+
+enum SubType {
+  MORNING
+  AFTERNOON
+  ROUND_TRIP
+}
+
+enum SubStatus {
+  PENDING
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum TripType {
+  MORNING
+  AFTERNOON
+}
+
+enum TripStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  MISSED
+  CANCELLED
+}
+
+enum PayStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+model User {
+  id                String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email             String?     @unique
+  phone             String      @unique
+  passwordHash      String?     @map("password_hash")
+  role              UserRole    @default(CONSUMER)
+  status            UserStatus  @default(PENDING_VERIFICATION)
+  fullName          String      @map("full_name")
+  profilePhotoUrl   String?     @map("profile_photo_url")
+  fcmToken          String?     @map("fcm_token")
+  preferredLanguage String      @default("en") @map("preferred_language") @db.Char(2)
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt         DateTime?   @map("deleted_at") @db.Timestamptz
+
+  // Relations
+  driverProfile    DriverProfile?
+  consumerProfile  ConsumerProfile?
+  sentMessages     Message[]        @relation("MessageSender")
+  authoredReviews  Review[]         @relation("ReviewAuthor")
+  receivedReviews  Review[]         @relation("ReviewTarget")
+  notifications    Notification[]
+  auditActorLog    AuditLog[]       @relation("AuditActor")
+  documentVerifier DriverDocument[] @relation("DocumentVerifier")
+
+  @@map("users")
+}
+
+// ─── Driver Profiles ──────────────────────────────────────────────────────────
+
+model DriverProfile {
+  id              String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId          String       @unique @map("user_id") @db.Uuid
+  licenceNumber   String       @map("licence_number")
+  vehicleMake     String       @map("vehicle_make")
+  vehicleModel    String       @map("vehicle_model")
+  vehicleYear     Int          @map("vehicle_year") @db.SmallInt
+  vehicleColour   String       @map("vehicle_colour")
+  plateNumber     String       @unique @map("plate_number")
+  seatCapacity    Int          @map("seat_capacity") @db.SmallInt
+  /// geography(LINESTRING, 4326) — raw SQL only; CHECK (seat_capacity BETWEEN 1 AND 50)
+  routePolyline   Unsupported("geography(LineString,4326)")? @map("route_polyline")
+  operatingDays   Int[]        @map("operating_days") @db.SmallInt
+  basePriceCents  Int          @map("base_price_cents")
+  /// CHECK (base_price_cents > 0)
+  currency        String       @default("PKR") @map("currency") @db.Char(3)
+  status          DriverStatus @default(PENDING)
+  verificationTier VerifyTier  @default(BASIC) @map("verification_tier")
+  stripeAccountId String?      @map("stripe_account_id")
+  bankAccountRef  String?      @map("bank_account_ref")
+  /// Pre-computed daily; T0.12 addition
+  acceptanceRate  Decimal?     @map("acceptance_rate") @db.Decimal(5, 2)
+  /// T0.12 addition
+  typicalDepartureTime DateTime? @map("typical_departure_time") @db.Timestamptz
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents       DriverDocument[]
+  scheduleSlots   DriverScheduleSlot[]
+  trips           Trip[]           @relation("TripDriver")
+  locationLogs    LocationLog[]
+  payouts         DriverPayout[]
+  subscriptions   Subscription[]
+
+  // Indexes
+  // GIST index idx_dp_route is created in the postgis raw-DDL migration
+  @@index([status], name: "idx_dp_status")
+  @@map("driver_profiles")
+}
+
+// ─── Driver Documents ─────────────────────────────────────────────────────────
+
+model DriverDocument {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  driverId    String    @map("driver_id") @db.Uuid
+  /// One of: CNIC | LICENCE | REGISTRATION | INSURANCE
+  docType     String    @map("doc_type")
+  s3Key       String    @map("s3_key")
+  expiryDate  DateTime? @map("expiry_date") @db.Date
+  verifiedAt  DateTime? @map("verified_at") @db.Timestamptz
+  verifiedBy  String?   @map("verified_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  driver   DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  verifier User?         @relation("DocumentVerifier", fields: [verifiedBy], references: [id])
+
+  @@map("driver_documents")
+}
+
+// ─── Consumer Profiles ────────────────────────────────────────────────────────
+
+model ConsumerProfile {
+  id                     String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId                 String  @unique @map("user_id") @db.Uuid
+  emergencyContactName   String  @map("emergency_contact_name")
+  emergencyContactPhone  String  @map("emergency_contact_phone")
+  stripeCustomerId       String? @map("stripe_customer_id")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  riders Rider[]
+
+  @@map("consumer_profiles")
+}
+
+// ─── Riders ───────────────────────────────────────────────────────────────────
+
+model Rider {
+  id                String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  consumerProfileId String  @map("consumer_profile_id") @db.Uuid
+  name              String
+  photoUrl          String? @map("photo_url")
+  homeAddressText   String  @map("home_address_text")
+  /// geography(POINT, 4326) — raw SQL only; GIST index idx_riders_home
+  homeLocation      Unsupported("geography(Point,4326)")? @map("home_location")
+  destAddressText   String  @map("dest_address_text")
+  /// geography(POINT, 4326) — raw SQL only; GIST index idx_riders_dest
+  destLocation      Unsupported("geography(Point,4326)")? @map("dest_location")
+  notes             String?
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  consumerProfile ConsumerProfile @relation(fields: [consumerProfileId], references: [id], onDelete: Cascade)
+  subscriptions   Subscription[]
+
+  // GIST indexes idx_riders_home and idx_riders_dest are in the postgis migration
+  @@map("riders")
+}
+
+// ─── Subscriptions ────────────────────────────────────────────────────────────
+
+model Subscription {
+  id                      String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  riderId                 String    @map("rider_id") @db.Uuid
+  driverProfileId         String    @map("driver_profile_id") @db.Uuid
+  type                    SubType
+  agreedPickupTime        DateTime  @map("agreed_pickup_time") @db.Time
+  agreedDropoffTime       DateTime  @map("agreed_dropoff_time") @db.Time
+  /// geography(POINT, 4326) — raw SQL only
+  agreedPickupLocation    Unsupported("geography(Point,4326)")? @map("agreed_pickup_location")
+  /// geography(POINT, 4326) — raw SQL only
+  agreedDropoffLocation   Unsupported("geography(Point,4326)")? @map("agreed_dropoff_location")
+  pickupAddressText       String    @map("pickup_address_text")
+  dropoffAddressText      String    @map("dropoff_address_text")
+  monthlyPriceCents       Int       @map("monthly_price_cents")
+  currency                String    @default("PKR") @map("currency") @db.Char(3)
+  status                  SubStatus @default(PENDING)
+  startDate               DateTime  @map("start_date") @db.Date
+  nextBillingDate         DateTime  @map("next_billing_date") @db.Date
+  stripeSubscriptionId    String?   @map("stripe_subscription_id")
+  cancellationReason      String?   @map("cancellation_reason")
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  rider         Rider         @relation(fields: [riderId], references: [id])
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id])
+  scheduleSlots DriverScheduleSlot[]
+  trips         Trip[]
+  payments      Payment[]
+  reviews       Review[]
+  messages      Message[]
+
+  @@index([driverProfileId, status], name: "idx_subs_driver_status")
+  @@index([riderId], name: "idx_subs_rider")
+  @@map("subscriptions")
+}
+
+// ─── Driver Schedule Slots ────────────────────────────────────────────────────
+
+/// Derived conflict-detection cache — rebuilt transactionally on every roster change.
+/// DO NOT edit manually. Source of truth is the subscriptions table (ADR-009).
+model DriverScheduleSlot {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  driverProfileId String   @map("driver_profile_id") @db.Uuid
+  subscriptionId  String   @map("subscription_id") @db.Uuid
+  slotStart       DateTime @map("slot_start") @db.Time
+  slotEnd         DateTime @map("slot_end") @db.Time
+  operatingDays   Int[]    @map("operating_days") @db.SmallInt
+  /// Position in optimised pickup run
+  pickupOrder     Int      @map("pickup_order") @db.SmallInt
+
+  // Relations
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
+  subscription  Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([driverProfileId, subscriptionId])
+  @@index([driverProfileId, operatingDays], name: "idx_dss_driver_days")
+  @@map("driver_schedule_slots")
+}
+
+// ─── Trips ────────────────────────────────────────────────────────────────────
+
+model Trip {
+  id                   String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  subscriptionId       String     @map("subscription_id") @db.Uuid
+  driverProfileId      String     @map("driver_profile_id") @db.Uuid
+  scheduledDate        DateTime   @map("scheduled_date") @db.Date
+  type                 TripType
+  status               TripStatus @default(SCHEDULED)
+  actualPickupAt       DateTime?  @map("actual_pickup_at") @db.Timestamptz
+  actualDropoffAt      DateTime?  @map("actual_dropoff_at") @db.Timestamptz
+  locationLogId        String?    @map("location_log_id") @db.Uuid
+  deviationAlertSent   Boolean    @default(false) @map("deviation_alert_sent")
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  subscription  Subscription  @relation(fields: [subscriptionId], references: [id])
+  driverProfile DriverProfile @relation("TripDriver", fields: [driverProfileId], references: [id])
+  locationLog   LocationLog?  @relation(fields: [locationLogId], references: [id])
+
+  @@unique([subscriptionId, scheduledDate, type], name: "idx_trips_sub_date")
+  @@index([status, scheduledDate], name: "idx_trips_status_date")
+  @@map("trips")
+}
+
+// ─── Location Logs ────────────────────────────────────────────────────────────
+
+model LocationLog {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  driverProfileId String    @map("driver_profile_id") @db.Uuid
+  tripId          String?   @map("trip_id") @db.Uuid
+  /// Array of {lat, lng, ts} — stored as JSONB. CHECK (jsonb_typeof(points) = 'array')
+  points          Json      @default("[]")
+  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  endedAt         DateTime? @map("ended_at") @db.Timestamptz
+
+  // Relations
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id])
+  trips         Trip[]
+
+  @@map("location_logs")
+}
+
+// ─── Payments ─────────────────────────────────────────────────────────────────
+
+model Payment {
+  id                     String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  subscriptionId         String    @map("subscription_id") @db.Uuid
+  amountCents            Int       @map("amount_cents")
+  currency               String    @default("PKR") @map("currency") @db.Char(3)
+  status                 PayStatus @default(PENDING)
+  stripePaymentIntentId  String?   @unique @map("stripe_payment_intent_id")
+  idempotencyKey         String    @unique @map("idempotency_key")
+  billingDate            DateTime  @map("billing_date") @db.Date
+  receiptUrl             String?   @map("receipt_url")
+  failureReason          String?   @map("failure_reason")
+  retryCount             Int       @default(0) @map("retry_count") @db.SmallInt
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@index([subscriptionId], name: "idx_payments_sub")
+  @@index([idempotencyKey], name: "idx_payments_idempotency")
+  @@map("payments")
+}
+
+// ─── Driver Payouts ───────────────────────────────────────────────────────────
+
+model DriverPayout {
+  id               String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  driverProfileId  String       @map("driver_profile_id") @db.Uuid
+  periodStart      DateTime     @map("period_start") @db.Date
+  periodEnd        DateTime     @map("period_end") @db.Date
+  grossCents       Int          @map("gross_cents")
+  commissionCents  Int          @map("commission_cents")
+  netCents         Int          @map("net_cents")
+  status           PayoutStatus @default(PENDING)
+  stripeTransferId String?      @map("stripe_transfer_id")
+  payoutDate       DateTime?    @map("payout_date") @db.Date
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id])
+
+  @@map("driver_payouts")
+}
+
+// ─── Reviews ──────────────────────────────────────────────────────────────────
+
+model Review {
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  subscriptionId String   @map("subscription_id") @db.Uuid
+  authorId       String   @map("author_id") @db.Uuid
+  targetId       String   @map("target_id") @db.Uuid
+  /// CHECK (rating BETWEEN 1 AND 5)
+  rating         Int      @db.SmallInt
+  comment        String?
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  author       User         @relation("ReviewAuthor", fields: [authorId], references: [id])
+  target       User         @relation("ReviewTarget", fields: [targetId], references: [id])
+
+  @@unique([subscriptionId, authorId])
+  @@map("reviews")
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  type      String
+  title     String
+  body      String
+  data      Json     @default("{}")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Partial index idx_notifications_user_unread (WHERE is_read = FALSE) is in postgis migration
+  @@map("notifications")
+}
+
+// ─── Messages ─────────────────────────────────────────────────────────────────
+
+model Message {
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  subscriptionId String    @map("subscription_id") @db.Uuid
+  senderId       String    @map("sender_id") @db.Uuid
+  body           String
+  sentAt         DateTime  @default(now()) @map("sent_at") @db.Timestamptz
+  readAt         DateTime? @map("read_at") @db.Timestamptz
+
+  // Relations
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([subscriptionId, sentAt(sort: Desc)], name: "idx_messages_sub")
+  @@map("messages")
+}
+
+// ─── Idempotency Keys ─────────────────────────────────────────────────────────
+
+model IdempotencyKey {
+  key         String    @id
+  requestHash String    @map("request_hash")
+  /// One of: in_progress | succeeded | failed
+  state       String    @default("in_progress")
+  response    Json?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz
+
+  @@index([expiresAt], name: "idx_idempotency_expires")
+  @@map("idempotency_keys")
+}
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id") @db.Uuid
+  oldData    Json?    @map("old_data")
+  newData    Json?    @map("new_data")
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([entityType, entityId], name: "idx_audit_entity")
+  @@map("audit_log")
+}
+
+// ─── T0.12: Refresh Tokens ────────────────────────────────────────────────────
+
+model RefreshToken {
+  id        String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  /// SHA-256 hex of the raw token — never store plaintext
+  tokenHash String    @unique @map("token_hash")
+  userId    String    @map("user_id") @db.Uuid
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("refresh_tokens")
+}
+
+// ─── T0.12: Payment Methods ───────────────────────────────────────────────────
+
+model PaymentMethod {
+  id                      String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId                  String   @map("user_id") @db.Uuid
+  /// e.g. "stripe"
+  gateway                 String
+  gatewayCustomerId       String   @map("gateway_customer_id")
+  gatewayPaymentMethodId  String   @map("gateway_payment_method_id")
+  isDefault               Boolean  @default(false) @map("is_default")
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("payment_methods")
+}
+
+// ─── T0.12: Support Tickets ───────────────────────────────────────────────────
+
+model SupportTicket {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tripId     String?   @map("trip_id") @db.Uuid
+  /// One of: OPEN | IN_PROGRESS | RESOLVED | CLOSED
+  status     String    @default("OPEN")
+  subject    String
+  body       String
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  resolvedAt DateTime? @map("resolved_at") @db.Timestamptz
+
+  @@map("support_tickets")
+}

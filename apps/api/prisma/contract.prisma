@@ -1,0 +1,487 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// RouteRide Prisma 8 Contract — v1
+// Database: PostgreSQL 16 + PostGIS 3.4 (via @prisma/orm-extension-postgis)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+types {
+  Geometry4326 = postgis.Geometry(4326)
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  CONSUMER
+  DRIVER
+  ADMIN
+  INSTITUTION_ADMIN
+  FLEET_ADMIN
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum DriverStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+  REJECTED
+}
+
+enum VerifyTier {
+  BASIC
+  ENHANCED
+  ELITE
+}
+
+enum SubType {
+  MORNING
+  AFTERNOON
+  ROUND_TRIP
+}
+
+enum SubStatus {
+  PENDING
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum TripType {
+  MORNING
+  AFTERNOON
+}
+
+enum TripStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  MISSED
+  CANCELLED
+}
+
+enum PayStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+model User {
+  id                String      @id @default(uuid())
+  email             String?
+  phone             String
+  passwordHash      String?     @map("password_hash")
+  role              UserRole    @default(CONSUMER)
+  status            UserStatus  @default(PENDING_VERIFICATION)
+  fullName          String      @map("full_name")
+  profilePhotoUrl   String?     @map("profile_photo_url")
+  fcmToken          String?     @map("fcm_token")
+  preferredLanguage String      @default("en") @map("preferred_language")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @default(now()) @map("updated_at")
+  deletedAt         DateTime?   @map("deleted_at")
+
+  // Relations
+  driverProfile    DriverProfile?
+  consumerProfile  ConsumerProfile?
+  sentMessages     Message[]        @relation("MessageSender")
+  authoredReviews  Review[]         @relation("ReviewAuthor")
+  receivedReviews  Review[]         @relation("ReviewTarget")
+  notifications    Notification[]
+  auditActorLog    AuditLog[]       @relation("AuditActor")
+  documentVerifier DriverDocument[] @relation("DocumentVerifier")
+
+  @@index([phone], map: "idx_users_phone", unique: true)
+  @@index([email], map: "idx_users_email", unique: true)
+  @@map("users")
+}
+
+// ─── Driver Profiles ──────────────────────────────────────────────────────────
+
+model DriverProfile {
+  id                   String       @id @default(uuid())
+  userId               String       @unique @map("user_id")
+  licenceNumber        String       @map("licence_number")
+  vehicleMake          String       @map("vehicle_make")
+  vehicleModel         String       @map("vehicle_model")
+  vehicleYear          Int          @map("vehicle_year")
+  vehicleColour        String       @map("vehicle_colour")
+  plateNumber          String       @unique @map("plate_number")
+  seatCapacity         Int          @map("seat_capacity")
+  routePolyline        Geometry4326? @map("route_polyline")
+  operatingDays        Int[]        @map("operating_days")
+  basePriceCents       Int          @map("base_price_cents")
+  currency             String       @default("PKR") @map("currency")
+  status               DriverStatus @default(PENDING)
+  verificationTier     VerifyTier   @default(BASIC) @map("verification_tier")
+  stripeAccountId      String?      @map("stripe_account_id")
+  bankAccountRef       String?      @map("bank_account_ref")
+  acceptanceRate       Decimal?     @map("acceptance_rate")
+  typicalDepartureTime DateTime?    @map("typical_departure_time")
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @default(now()) @map("updated_at")
+
+  // Relations
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents       DriverDocument[]
+  scheduleSlots   DriverScheduleSlot[]
+  trips           Trip[]               @relation("TripDriver")
+  locationLogs    LocationLog[]
+  payouts         DriverPayout[]
+  subscriptions   Subscription[]
+
+  @@index([status], map: "idx_dp_status")
+  @@map("driver_profiles")
+}
+
+// ─── Driver Documents ─────────────────────────────────────────────────────────
+
+model DriverDocument {
+  id          String    @id @default(uuid())
+  driverId    String    @map("driver_id")
+  docType     String    @map("doc_type")
+  s3Key       String    @map("s3_key")
+  expiryDate  DateTime? @map("expiry_date")
+  verifiedAt  DateTime? @map("verified_at")
+  verifiedBy  String?   @map("verified_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  driver   DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  verifier User?         @relation("DocumentVerifier", fields: [verifiedBy], references: [id])
+
+  @@map("driver_documents")
+}
+
+// ─── Consumer Profiles ────────────────────────────────────────────────────────
+
+model ConsumerProfile {
+  id                    String   @id @default(uuid())
+  userId                String   @unique @map("user_id")
+  emergencyContactName  String   @map("emergency_contact_name")
+  emergencyContactPhone String   @map("emergency_contact_phone")
+  stripeCustomerId      String?  @map("stripe_customer_id")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @default(now()) @map("updated_at")
+
+  // Relations
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  riders Rider[]
+
+  @@map("consumer_profiles")
+}
+
+// ─── Riders ───────────────────────────────────────────────────────────────────
+
+model Rider {
+  id                String    @id @default(uuid())
+  consumerProfileId String    @map("consumer_profile_id")
+  name              String
+  photoUrl          String?   @map("photo_url")
+  homeAddressText   String    @map("home_address_text")
+  homeLocation      Geometry4326? @map("home_location")
+  destAddressText   String    @map("dest_address_text")
+  destLocation      Geometry4326? @map("dest_location")
+  notes             String?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @map("updated_at")
+
+  // Relations
+  consumerProfile ConsumerProfile @relation(fields: [consumerProfileId], references: [id], onDelete: Cascade)
+  subscriptions   Subscription[]
+
+  @@map("riders")
+}
+
+// ─── Subscriptions ────────────────────────────────────────────────────
+
+model Subscription {
+  id                    String    @id @default(uuid())
+  riderId               String    @map("rider_id")
+  driverProfileId       String    @map("driver_profile_id")
+  type                  SubType
+  agreedPickupTime      DateTime  @map("agreed_pickup_time")
+  agreedDropoffTime     DateTime  @map("agreed_dropoff_time")
+  agreedPickupLocation  Geometry4326? @map("agreed_pickup_location")
+  agreedDropoffLocation Geometry4326? @map("agreed_dropoff_location")
+  pickupAddressText     String    @map("pickup_address_text")
+  dropoffAddressText    String    @map("dropoff_address_text")
+  monthlyPriceCents     Int       @map("monthly_price_cents")
+  currency              String    @default("PKR") @map("currency")
+  status                SubStatus @default(PENDING)
+  startDate             DateTime  @map("start_date")
+  nextBillingDate       DateTime  @map("next_billing_date")
+  stripeSubscriptionId  String?   @map("stripe_subscription_id")
+  cancellationReason    String?   @map("cancellation_reason")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @map("updated_at")
+
+  // Relations
+  rider         Rider         @relation(fields: [riderId], references: [id])
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id])
+  scheduleSlots DriverScheduleSlot[]
+  trips         Trip[]
+  payments      Payment[]
+  reviews       Review[]
+  messages      Message[]
+
+  @@index([driverProfileId, status], map: "idx_subs_driver_status")
+  @@index([riderId], map: "idx_subs_rider")
+  @@map("subscriptions")
+}
+
+// ─── Driver Schedule Slots ────────────────────────────────────────────────────
+
+model DriverScheduleSlot {
+  id              String   @id @default(uuid())
+  driverProfileId String   @map("driver_profile_id")
+  subscriptionId  String   @map("subscription_id")
+  slotStart       DateTime @map("slot_start")
+  slotEnd         DateTime @map("slot_end")
+  operatingDays   Int[]    @map("operating_days")
+  pickupOrder     Int      @map("pickup_order")
+
+  // Relations
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
+  subscription  Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([driverProfileId, subscriptionId])
+  @@index([driverProfileId, operatingDays], map: "idx_dss_driver_days")
+  @@map("driver_schedule_slots")
+}
+
+// ─── Trips ────────────────────────────────────────────────────────────────────
+
+model Trip {
+  id                 String     @id @default(uuid())
+  subscriptionId     String     @map("subscription_id")
+  driverProfileId    String     @map("driver_profile_id")
+  scheduledDate      DateTime   @map("scheduled_date")
+  type               TripType
+  status             TripStatus @default(SCHEDULED)
+  actualPickupAt     DateTime?  @map("actual_pickup_at")
+  actualDropoffAt    DateTime?  @map("actual_dropoff_at")
+  locationLogId      String?    @map("location_log_id")
+  deviationAlertSent Boolean    @default(false) @map("deviation_alert_sent")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @default(now()) @map("updated_at")
+
+  // Relations
+  subscription  Subscription  @relation(fields: [subscriptionId], references: [id])
+  driverProfile DriverProfile @relation("TripDriver", fields: [driverProfileId], references: [id])
+  locationLog   LocationLog?  @relation(fields: [locationLogId], references: [id])
+
+  @@unique([subscriptionId, scheduledDate, type], map: "idx_trips_sub_date")
+  @@index([status, scheduledDate], map: "idx_trips_status_date")
+  @@map("trips")
+}
+
+// ─── Location Logs ────────────────────────────────────────────────────────────
+
+model LocationLog {
+  id              String    @id @default(uuid())
+  driverProfileId String    @map("driver_profile_id")
+  tripId          String?   @map("trip_id")
+  points          Json      @default("[]")
+  startedAt       DateTime  @default(now()) @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+
+  // Relations
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id])
+  trips         Trip[]
+
+  @@map("location_logs")
+}
+
+// ─── Payments ─────────────────────────────────────────────────────────────────
+
+model Payment {
+  id                    String    @id @default(uuid())
+  subscriptionId        String    @map("subscription_id")
+  amountCents           Int       @map("amount_cents")
+  currency              String    @default("PKR") @map("currency")
+  status                PayStatus @default(PENDING)
+  stripePaymentIntentId String?   @unique @map("stripe_payment_intent_id")
+  idempotencyKey        String    @unique @map("idempotency_key")
+  billingDate           DateTime  @map("billing_date")
+  receiptUrl            String?   @map("receipt_url")
+  failureReason         String?   @map("failure_reason")
+  retryCount            Int       @default(0) @map("retry_count")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @map("updated_at")
+
+  // Relations
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@index([subscriptionId], map: "idx_payments_sub")
+  @@index([idempotencyKey], map: "idx_payments_idempotency")
+  @@map("payments")
+}
+
+// ─── Driver Payouts ───────────────────────────────────────────────────────────
+
+model DriverPayout {
+  id               String       @id @default(uuid())
+  driverProfileId  String       @map("driver_profile_id")
+  periodStart      DateTime     @map("period_start")
+  periodEnd        DateTime     @map("period_end")
+  grossCents       Int          @map("gross_cents")
+  commissionCents  Int          @map("commission_cents")
+  netCents         Int          @map("net_cents")
+  status           PayoutStatus @default(PENDING)
+  stripeTransferId String?      @map("stripe_transfer_id")
+  payoutDate       DateTime?    @map("payout_date")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @default(now()) @map("updated_at")
+
+  // Relations
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id])
+
+  @@map("driver_payouts")
+}
+
+// ─── Reviews ──────────────────────────────────────────────────────────────────
+
+model Review {
+  id             String   @id @default(uuid())
+  subscriptionId String   @map("subscription_id")
+  authorId       String   @map("author_id")
+  targetId       String   @map("target_id")
+  rating         Int
+  comment        String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  author       User         @relation("ReviewAuthor", fields: [authorId], references: [id])
+  target       User         @relation("ReviewTarget", fields: [targetId], references: [id])
+
+  @@unique([subscriptionId, authorId])
+  @@map("reviews")
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String
+  title     String
+  body      String
+  data      Json     @default("{}")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// ─── Messages ─────────────────────────────────────────────────────────────────
+
+model Message {
+  id             String    @id @default(uuid())
+  subscriptionId String    @map("subscription_id")
+  senderId       String    @map("sender_id")
+  body           String
+  sentAt         DateTime  @default(now()) @map("sent_at")
+  readAt         DateTime? @map("read_at")
+
+  // Relations
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([subscriptionId, sentAt], map: "idx_messages_sub")
+  @@map("messages")
+}
+
+// ─── Idempotency Keys ─────────────────────────────────────────────────────────
+
+model IdempotencyKey {
+  key         String    @id
+  requestHash String    @map("request_hash")
+  state       String    @default("in_progress")
+  response    Json?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  expiresAt   DateTime  @map("expires_at")
+
+  @@index([expiresAt], map: "idx_idempotency_expires")
+  @@map("idempotency_keys")
+}
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?  @map("actor_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  oldData    Json?    @map("old_data")
+  newData    Json?    @map("new_data")
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([entityType, entityId], map: "idx_audit_entity")
+  @@map("audit_log")
+}
+
+// ─── Refresh Tokens ───────────────────────────────────────────────────────────
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique @map("token_hash")
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}
+
+// ─── Payment Methods ──────────────────────────────────────────────────────────
+
+model PaymentMethod {
+  id                     String   @id @default(uuid())
+  userId                 String   @map("user_id")
+  gateway                String
+  gatewayCustomerId      String   @map("gateway_customer_id")
+  gatewayPaymentMethodId String   @map("gateway_payment_method_id")
+  isDefault              Boolean  @default(false) @map("is_default")
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  @@map("payment_methods")
+}
+
+// ─── Support Tickets ──────────────────────────────────────────────────────────
+
+model SupportTicket {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  tripId     String?   @map("trip_id")
+  status     String    @default("OPEN")
+  subject    String
+  body       String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  resolvedAt DateTime? @map("resolved_at")
+
+  @@map("support_tickets")
+}

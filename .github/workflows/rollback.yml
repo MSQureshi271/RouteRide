@@ -1,0 +1,85 @@
+name: Emergency Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target Environment to roll back"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      service:
+        description: "Target Service to roll back"
+        required: true
+        type: choice
+        options:
+          - api
+          - matching
+          - admin
+      target_image_tag:
+        description: "Target Docker Image Tag or SHA to restore (e.g. sha-a1b2c3d4 or v0.1.0)"
+        required: true
+        type: string
+      reason:
+        description: "Incident summary or reason for rollback"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  rollback:
+    name: Execute Rollback (${{ inputs.environment }} - ${{ inputs.service }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-south-1
+          role-to-assume: ${{ inputs.environment == 'production' && secrets.AWS_PRODUCTION_DEPLOY_ROLE_ARN || secrets.AWS_STAGING_DEPLOY_ROLE_ARN }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: 1. Audit Rollback Request
+        run: |
+          echo "========================================================"
+          echo "EMERGENCY ROLLBACK INITIATED"
+          echo "Environment : ${{ inputs.environment }}"
+          echo "Service     : ${{ inputs.service }}"
+          echo "Target Image: ${{ steps.login-ecr.outputs.registry }}/routeride/${{ inputs.service }}:${{ inputs.target_image_tag }}"
+          echo "Initiated By: ${{ github.actor }}"
+          echo "Reason      : ${{ inputs.reason }}"
+          echo "Timestamp   : $(date -u)"
+          echo "========================================================"
+
+      - name: 2. Update ECS Task Definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infra/ecs/${{ inputs.environment == 'production' && 'prod' || 'staging' }}-${{ inputs.service }}-task-def.json
+          container-name: ${{ inputs.service }}
+          image: ${{ steps.login-ecr.outputs.registry }}/routeride/${{ inputs.service }}:${{ inputs.target_image_tag }}
+
+      - name: 3. Redeploy Previous Service Revision
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: routeride-${{ inputs.environment == 'production' && 'prod' || 'staging' }}-${{ inputs.service }}
+          cluster: routeride-${{ inputs.environment == 'production' && 'prod' || 'staging' }}-cluster
+          wait-for-service-stability: true
+
+      - name: 4. Post-Rollback Smoke Verification
+        uses: ./.github/workflows/smoke.yml
+        with:
+          target_url: ${{ inputs.environment == 'production' && 'https://api.routeride.com' || 'https://api-staging.routeride.com' }}
+          environment: ${{ inputs.environment }}

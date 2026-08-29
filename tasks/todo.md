@@ -71,6 +71,7 @@ do not assume a default command.
   - **Skills:** security-and-hardening, doubt-driven-development
 
 ### ✅ Checkpoint D — decisions locked
+
 - [x] ADR-001 … ADR-004 Accepted; B4, B6, and B7 answered (B1, B2, B3, B5 decided 2026-08-23; B4, B6, B7 decided 2026-08-25)
 - [x] Spec-delta, parameters, regulatory review, privacy register, and threat model committed
 - [x] PRD §18 risk table updated in SPEC-DELTA to stop citing SOS and escrow as mitigations
@@ -146,6 +147,7 @@ do not assume a default command.
   - **Skills:** ci-cd-and-automation, test-driven-development
 
 ### ✅ Checkpoint 0-A — the gates exist before the code does
+
 - [x] CI green on the empty scaffold; every gate demonstrably blocks a bad change
 - [x] All seven `.agents/references/` files exist and resolve
 - [x] `CLAUDE.md` commands all run from a clean clone
@@ -153,56 +155,56 @@ do not assume a default command.
 
 ### 0.2 Schema, contracts, and the observability baseline (`platform-foundation`)
 
-- [ ] **T0.11 — Prisma schema v1 plus the PostGIS raw-DDL migration** · `M` · deps: T0.06, T-D.02
+- [x] **T0.11 — Prisma schema v1 plus the PostGIS raw-DDL migration** · `M` · deps: T0.06, T-D.02
   - **Do:** Translate TRD §3.1 into `schema.prisma` for everything Prisma can express. Put extensions (`uuid-ossp`, `postgis`), the ten enum types, all `GEOGRAPHY` columns, and the GIST indexes into one dedicated raw-SQL migration. Add the B-tree and partial indexes from TRD §3.2.
   - **Accept:** `prisma migrate deploy` builds the full schema from empty; every index in TRD §3.2 exists; every timestamp is `TIMESTAMPTZ`; every money column is `INTEGER` cents.
   - **Verify:** Integration test queries `pg_indexes` and asserts each of the 17 named indexes exists, and asserts `idx_dp_route` is `gist`; a second test round-trips a `LINESTRING` through Prisma raw SQL.
   - **Files:** `apps/api/prisma/schema.prisma`, `apps/api/prisma/migrations/*_init/`, `apps/api/prisma/migrations/*_postgis/migration.sql`, `apps/api/test/schema.integration.test.ts`
   - **Skills:** api-and-interface-design, test-driven-development, source-driven-development
-- [ ] **T0.12 — Migration v2: close the TRD schema gaps** · `M` · deps: T0.11
+- [x] **T0.12 — Migration v2: close the TRD schema gaps** · `M` · deps: T0.11
   - **Do:** Add the tables and columns TRD prose requires but its DDL omits (see `plan.md` §10.6–§10.10): `refresh_tokens`, `payment_methods`, `support_tickets`, `driver_profiles.acceptance_rate` and `typical_departure_time`, and a real foreign key on `trips.location_log_id`. Add a `pickup_order` uniqueness constraint per driver per leg.
   - **Accept:** Every field read by code specified in the TRD now exists; no column is added without a consumer; `refresh_tokens` stores only a SHA-256 hash.
   - **Verify:** Migration applies and rolls forward cleanly on a seeded database; a test asserts each new constraint rejects the value it is meant to reject.
   - **Files:** `apps/api/prisma/schema.prisma`, `apps/api/prisma/migrations/*_schema_gaps/`, `apps/api/test/schema-v2.integration.test.ts`
   - **Skills:** api-and-interface-design, doubt-driven-development
-- [ ] **T0.13 — Deterministic seed fixtures** · `S` · deps: T0.11
+- [x] **T0.13 — Deterministic seed fixtures** · `S` · deps: T0.11
   - **Do:** A seed script producing a fixed, hand-checkable world: 12 approved drivers with real polylines across one city, 3 pending drivers, 8 consumers, 14 riders, and a mix of active, pending, and cancelled subscriptions. Fixed UUIDs and a fixed clock.
   - **Accept:** Running the seed twice from empty produces byte-identical rows; the polylines include at least one that intersects a pickup point at exactly the radius boundary and one that runs the opposite direction.
   - **Verify:** `pnpm --filter api seed` then a test asserting known row counts and one known `ST_DWithin` result.
   - **Files:** `apps/api/prisma/seed.ts`, `apps/api/prisma/fixtures/*.json`
   - **Skills:** test-driven-development
-- [ ] **T0.14 — `packages/contracts`: the full DTO surface, contract-first** · `M` · deps: T0.04, T0.05
+- [x] **T0.14 — `packages/contracts`: the full DTO surface, contract-first** · `M` · deps: T0.04, T0.05
   - **Do:** Zod schemas plus inferred TypeScript types for every request and response in TRD §5, the response and error envelopes, the pagination shape, and the WebSocket event payloads from §6.2–§6.3. Generate the OpenAPI document from the same schemas. Publish the matching service's contract as generated Pydantic models or a shared JSON Schema.
   - **Accept:** Every endpoint has typed input and output; enums are `UPPER_SNAKE`; fields are `camelCase`; money is integer cents with a currency field; all schemas are `.strict()`. `POST /trips/sos`, the `trip:sos` event, and every `[PHASE 2]`-marked endpoint are **excluded** — B2 put SOS out of MVP, and an unused schema is a promise nobody kept.
   - **Verify:** `pnpm --filter contracts test` round-trips a valid and an invalid sample per schema; the generated OpenAPI document validates against the 3.1 meta-schema.
   - **Files:** `packages/contracts/src/**`, `packages/contracts/openapi.json`
   - **Skills:** api-and-interface-design, incremental-implementation
-- [ ] **T0.15 — Response envelope, error contract, and `requestId`** · `S` · deps: T0.14
+- [x] **T0.15 — Response envelope, error contract, and `requestId`** · `S` · deps: T0.14
   - **Do:** NestJS global interceptor wrapping every success in `{ data, meta: { requestId, timestamp } }` and a global exception filter emitting `{ error: { code, message, details }, meta }`. Map the nine status codes from TRD §5.10. Never leak a stack trace or internal message.
   - **Accept:** A thrown internal error returns `500 INTERNAL_ERROR` with a `requestId` and nothing else; `X-Request-ID` is set on every response; every error code in §5.10 is reachable and tested.
   - **Verify:** Integration test per status code asserting the envelope shape; a test throwing a raw `Error` asserts no stack text appears in the body.
   - **Files:** `apps/api/src/common/response.interceptor.ts`, `apps/api/src/common/error.filter.ts`, `apps/api/test/error-contract.integration.test.ts`
   - **Skills:** api-and-interface-design, security-and-hardening
 
-- [ ] **T0.16 — Structured logging with redaction** · `S` · deps: T0.15
+- [x] **T0.16 — Structured logging with redaction** · `S` · deps: T0.15
   - **Do:** Pino in every Node service and structlog in the matching service. Child logger per request carrying `requestId` and `userId`. A redaction allowlist, and a coordinate formatter that rounds to 2 decimal places before any coordinate is logged. Never log whole request bodies.
   - **Accept:** Every line is JSON with `level`, `timestamp`, `service`, `requestId`, and a stable `event` name; passwords, tokens, OTPs, and card data cannot reach the output; coordinates in logs are 2dp.
   - **Verify:** A test posts a login with a known password and asserts the string is absent from captured log output; a test logs a location event and asserts `24.86` not `24.8607412`.
   - **Files:** `packages/config/src/logger.ts`, `apps/matching/app/logging.py`, `packages/config/src/logger.test.ts`
   - **Skills:** observability-and-instrumentation, security-and-hardening
-- [ ] **T0.17 — OpenTelemetry tracing and Sentry across all services** · `S` · deps: T0.16
+- [x] **T0.17 — OpenTelemetry tracing and Sentry across all services** · `S` · deps: T0.16
   - **Do:** OTel Node SDK with auto-instrumentation, imported before anything else; the Python equivalent in the matching service. Propagate W3C `traceparent` on every service-to-service call and into BullMQ job metadata. Initialise Sentry in API, workers, matching, and both mobile apps.
   - **Accept:** One request from the API through the matching service to the database appears as a single unbroken trace; `requestId` is queryable as a span attribute; queue jobs continue the parent trace.
   - **Verify:** Trigger a search against the local stack and follow the trace end to end with no orphan spans.
   - **Files:** `packages/config/src/tracing.ts`, `apps/matching/app/tracing.py`, `apps/api/src/main.ts`
   - **Skills:** observability-and-instrumentation
-- [ ] **T0.18 — RED metrics and the health endpoint** · `S` · deps: T0.17
+- [x] **T0.18 — RED metrics and the health endpoint** · `S` · deps: T0.17
   - **Do:** Histogram-based request duration with `method`, `route` (template, never raw URL), and `status_class` labels; the same three RED signals around every external dependency (Postgres, Redis, Stripe, FCM, Maps, S3). `GET /health` returning `{ status, db, redis }` with real checks.
   - **Accept:** No metric label can take an unbounded value; latency is a histogram with p50/p95/p99 queryable; `/health` returns 503 when Postgres is unreachable.
   - **Verify:** A test asserts the label set of every registered metric is drawn from a fixed allowlist; stop the local database and confirm `/health` degrades rather than hanging.
   - **Files:** `apps/api/src/common/metrics.ts`, `apps/api/src/health/health.controller.ts`, `apps/api/test/metrics.test.ts`
   - **Skills:** observability-and-instrumentation
-- [ ] **T0.19 — Security headers, CORS, and Redis-backed rate limiting** · `S` · deps: T0.15
+- [x] **T0.19 — Security headers, CORS, and Redis-backed rate limiting** · `S` · deps: T0.15
   - **Do:** `helmet` with the CSP, HSTS, referrer-policy, and frameguard settings from TRD §12.5. CORS from an explicit allowlist. A Redis-backed limiter implementing every row of TRD §12.4 — 5/IP/10min on auth, 3/phone/5min on OTP, 30/user/min on search, 200/user/min general.
   - **Accept:** `*` is rejected as a CORS origin when `NODE_ENV=production`; exceeding a limit returns `429` with `Retry-After`; limits are per the table, not one global number.
   - **Verify:** Integration test per limiter row driving the endpoint past its limit and asserting `429` plus the header; a test asserts the response carries HSTS and `X-Content-Type-Options`.
@@ -210,39 +212,40 @@ do not assume a default command.
   - **Skills:** security-and-hardening
 
 ### ✅ Checkpoint 0-B — the platform is observable and safe by default
-- [ ] Migrations apply from empty; all 17 indexes present and correctly typed
-- [ ] `/health` returns 200 locally and 503 with the database stopped
-- [ ] One request produces a structured log with `requestId` and an unbroken trace
-- [ ] Every rate-limit row and every error code has a passing test
-- [ ] `packages/contracts` covers the whole TRD §5 surface; OpenAPI generates
+
+- [x] Migrations apply from empty; all 17 indexes present and correctly typed
+- [x] `/health` returns 200 locally and 503 with the database stopped
+- [x] One request produces a structured log with `requestId` and an unbroken trace
+- [x] Every rate-limit row and every error code has a passing test
+- [x] `packages/contracts` covers the whole TRD §5 surface; OpenAPI generates
 
 ### 0.3 Infrastructure and delivery (`platform-foundation`)
 
-- [ ] **T0.20 — Terraform: staging environment** · `M` · deps: T-D.02
+- [x] **T0.20 — Terraform: staging environment** · `M` · deps: T-D.02
   - **Do:** VPC with public and private subnets, RDS PostgreSQL 16 Multi-AZ (`db.t4g.micro` for staging), ElastiCache Redis 7, two S3 buckets (documents private with SSE-KMS and versioning, assets behind CloudFront), ECR repositories with scan-on-push, Secrets Manager entries, and an ALB with WAF managed rules. State in S3 with a DynamoDB lock.
   - **Accept:** `terraform plan` is clean and idempotent; the documents bucket denies non-HTTPS `PUT` and has no public access; ECS task roles are least-privilege with no instance-metadata access.
   - **Verify:** `terraform apply` in staging, then confirm from outside the VPC that the documents bucket and the admin ALB are both unreachable.
   - **Files:** `infra/terraform/{main,rds,redis,s3,ecr,alb,secrets}.tf`
   - **Skills:** security-and-hardening, ci-cd-and-automation
-- [ ] **T0.21 — Hardened container images** · `S` · deps: T0.04
+- [x] **T0.21 — Hardened container images** · `S` · deps: T0.04
   - **Do:** Multi-stage Dockerfiles for `api`, `matching`, `admin`, and `worker`. Non-root user, `node:22-alpine` and a slim Python base, `HEALTHCHECK` hitting `/health`, no secrets baked in, `.dockerignore` excluding tests and `.env*`.
   - **Accept:** Every image runs as a non-root UID; `docker history` shows no secret; the images build reproducibly from a clean checkout.
   - **Verify:** `docker run --rm <image> id` prints a non-zero UID; ECR scan-on-push reports no CRITICAL finding.
   - **Files:** `apps/api/Dockerfile`, `apps/matching/Dockerfile`, `apps/admin/Dockerfile`, `.dockerignore`
   - **Skills:** security-and-hardening, ci-cd-and-automation
-- [ ] **T0.22 — CD pipeline: build, staging, gated production** · `M` · deps: T0.08, T0.20, T0.21
+- [x] **T0.22 — CD pipeline: build, staging, gated production** · `M` · deps: T0.08, T0.20, T0.21
   - **Do:** On merge to `main`: build and push images tagged with the git SHA, update the staging ECS task definitions, wait for service stability, run smoke tests against staging. A separate production job requiring GitHub environment approval, running `prisma migrate deploy` first, then a blue/green ECS deploy with automatic rollback on a failed health check inside 5 minutes.
   - **Accept:** No path exists from a red CI run to a production deploy; production requires a human approval; migrations run before the new task definition goes live.
   - **Verify:** Merge a trivial change and watch it reach staging automatically and stop at the production gate.
   - **Files:** `.github/workflows/deploy.yml`, `.github/workflows/smoke.yml`
   - **Skills:** ci-cd-and-automation, shipping-and-launch
-- [ ] **T0.23 — Rollback workflow and runbook** · `S` · deps: T0.22
+- [x] **T0.23 — Rollback workflow and runbook** · `S` · deps: T0.22
   - **Do:** A `workflow_dispatch` rollback that redeploys a named previous image digest, plus a written runbook covering feature-flag kill, image rollback, and migration rollback, with expected time-to-recover for each.
   - **Accept:** Rollback is executable by one person with no tribal knowledge; the runbook names the trigger thresholds from `shipping-and-launch`.
   - **Verify:** Deploy two versions to staging, then roll back to the first and confirm `/health` and a smoke test pass on the older image.
   - **Files:** `.github/workflows/rollback.yml`, `docs/runbooks/rollback.md`
   - **Skills:** shipping-and-launch, ci-cd-and-automation
-- [ ] **T0.24 — README, changelog, and the foundation ADRs** · `S` · deps: T0.22
+- [x] **T0.24 — README, changelog, and the foundation ADRs** · `S` · deps: T0.22
   - **Do:** README with quick start, the command table, and an architecture overview linking to the ADRs. Start `CHANGELOG.md` with `Keep a Changelog` grouping. Write ADR-005 through ADR-010 from `plan.md` §4, including ADR-008's removal of Firebase RTDB.
   - **Accept:** A new engineer can go from clone to a running local stack using only the README; all ten ADRs exist and are Accepted.
   - **Verify:** Hand the README to someone who has not seen the repo; they reach a running local stack without asking a question.
@@ -250,10 +253,11 @@ do not assume a default command.
   - **Skills:** documentation-and-adrs
 
 ### ✅ Checkpoint 0-C — delivery works before there is anything to deliver
-- [ ] Staging deploy succeeds from a merge to `main`; production gate holds
-- [ ] Rollback dry-run verified on staging
-- [ ] Documents bucket and admin ALB unreachable from the public internet
-- [ ] README verified by someone who has not seen the repo
+
+- [x] Staging deploy succeeds from a merge to `main`; production gate holds
+- [x] Rollback dry-run verified on staging
+- [x] Documents bucket and admin ALB unreachable from the public internet
+- [x] README verified by someone who has not seen the repo
 
 ### 0.4 Identity (`identity`)
 
@@ -386,6 +390,7 @@ do not assume a default command.
   - **Skills:** frontend-ui-engineering, test-driven-development
 
 ### ✅ Checkpoint 0-D — Phase 0 exit: the foundation carries weight
+
 - [ ] A parent can register, verify, add riders, and reach the consumer shell on a real device
 - [ ] A driver can register, complete all four onboarding steps, and sit in pending verification
 - [ ] The RBAC matrix suite and every auth abuse-case test are green
@@ -471,7 +476,7 @@ do not assume a default command.
   - **Skills:** frontend-ui-engineering, test-driven-development
 - [ ] **T1.12 — Search results and driver card (mobile)** · `M` · deps: T1.11
   - **Do:** A ranked result list with a driver card showing name, photo, vehicle, rating with review count, current riders against capacity, estimated pickup time, pickup distance, verification tier, and monthly price. Distinct empty state for "no eligible driver", error state with retry, and a skeleton list while loading.
-  - **Accept:** The no-match state explains *why* nothing matched and offers a concrete next action (widen time, change days) rather than a dead end; price is formatted from integer cents with the currency; rating is never rendered as a bare `null`; the list is virtualised.
+  - **Accept:** The no-match state explains _why_ nothing matched and offers a concrete next action (widen time, change days) rather than a dead end; price is formatted from integer cents with the currency; rating is never rendered as a bare `null`; the list is virtualised.
   - **Verify:** Component tests for populated, empty, error, and loading states; a snapshot of the price formatter across currencies; accessibility pass on the card.
   - **Files:** `apps/mobile-consumer/app/(app)/search/results.tsx`, `packages/ui/src/components/DriverCard.tsx`, `packages/ui/src/components/DriverCard.test.tsx`
   - **Skills:** frontend-ui-engineering, test-driven-development
@@ -483,6 +488,7 @@ do not assume a default command.
   - **Skills:** frontend-ui-engineering, security-and-hardening
 
 ### ✅ Checkpoint 1-A — discovery works and is fast enough
+
 - [ ] A parent searches and gets a deterministic, ranked list of genuinely eligible drivers
 - [ ] Every hard filter has a failing-then-passing test, including the round-trip return leg
 - [ ] The aggregate-fan-out regression test fails against the TRD's original query and passes against ours
@@ -563,6 +569,7 @@ do not assume a default command.
   - **Skills:** observability-and-instrumentation, security-and-hardening
 
 ### ✅ Checkpoint 1-B — the core promise holds under concurrency
+
 - [ ] Discovery → request → accept works end to end on real devices, both roles
 - [ ] 50 concurrent acceptances on the last seat produce exactly one `ACTIVE` subscription, zero orphan slots
 - [ ] The preview verdict and the acceptance verdict always agree
@@ -612,7 +619,7 @@ do not assume a default command.
   - **Skills:** security-and-hardening, observability-and-instrumentation, test-driven-development
 
 - [ ] **T1.31 — Location authorisation: the invariant that matters most** · `M` · deps: T1.30
-  - **Do:** On subscribe, verify the requesting user has an `ACTIVE` subscription with that driver *and* that the driver is currently running a trip involving one of that user's riders. Re-verify on subscription cancellation and force-unsubscribe. Admins may subscribe; nobody else can.
+  - **Do:** On subscribe, verify the requesting user has an `ACTIVE` subscription with that driver _and_ that the driver is currently running a trip involving one of that user's riders. Re-verify on subscription cancellation and force-unsubscribe. Admins may subscribe; nobody else can.
   - **Accept:** A consumer with no subscription to that driver cannot subscribe to the channel; a consumer whose subscription was cancelled loses the stream immediately, not at the next reconnect; a driver cannot subscribe to another driver's channel; a `PENDING` subscription grants nothing.
   - **Verify:** Adversarial test suite covering each of the four cases plus a channel-name-guessing attempt and a token-swap attempt mid-connection. This is a doubt-driven artefact — fresh-context adversarial review required before merge.
   - **Files:** `apps/location/src/subscribe.guard.ts`, `apps/location/test/location-authz.integration.test.ts`
@@ -668,6 +675,7 @@ do not assume a default command.
   - **Skills:** performance-optimization, observability-and-instrumentation
 
 ### ✅ Checkpoint 1-C — a parent can actually watch the ride
+
 - [ ] End to end on real devices: driver starts a run, marks pickup, parent sees live movement and gets all four notifications
 - [ ] Location authorisation suite green, including every adversarial case; doubt-driven review completed
 - [ ] Trip transition matrix exhaustively tested; offline replay produces no duplicates
@@ -693,8 +701,8 @@ do not assume a default command.
   - **Skills:** api-and-interface-design, security-and-hardening
 
 - [ ] **T1.42 — Monthly charge job with derived idempotency** · `M` · deps: T1.41, T1.16
-  - **Do:** A daily job charging every subscription whose `next_billing_date` is due. The idempotency key is `charge:v1:{subscriptionId}:{billingDate}` — derived from the intent, stable across retries, and different next month. Insert the `payments` row *before* calling Stripe (intent before action), then reconcile from the PaymentIntent result. Advance `next_billing_date` only on success.
-  - **Accept:** Running the job twice on the same day charges once; a crash between the insert and the Stripe call leaves a `PENDING` row that reconciliation resolves rather than a silent double charge; a timeout is treated as *unknown*, not as failure, and is resolved by querying Stripe; month-end dates (31st → February) are handled by an explicit documented rule.
+  - **Do:** A daily job charging every subscription whose `next_billing_date` is due. The idempotency key is `charge:v1:{subscriptionId}:{billingDate}` — derived from the intent, stable across retries, and different next month. Insert the `payments` row _before_ calling Stripe (intent before action), then reconcile from the PaymentIntent result. Advance `next_billing_date` only on success.
+  - **Accept:** Running the job twice on the same day charges once; a crash between the insert and the Stripe call leaves a `PENDING` row that reconciliation resolves rather than a silent double charge; a timeout is treated as _unknown_, not as failure, and is resolved by querying Stripe; month-end dates (31st → February) are handled by an explicit documented rule.
   - **Verify:** Tests for double run, mid-call crash simulation, timeout-then-reconcile, the month-end rule, and a subscription cancelled with an effective date before the billing date receiving no charge.
   - **Files:** `apps/worker/src/billing.job.ts`, `apps/api/src/payments/charge.service.ts`, `apps/worker/test/billing.test.ts`
   - **Skills:** doubt-driven-development, api-and-interface-design, test-driven-development
@@ -723,7 +731,7 @@ do not assume a default command.
   - **Files:** `apps/api/src/payments/connect.controller.ts`, `apps/api/test/connect-onboarding.integration.test.ts`
   - **Skills:** security-and-hardening, source-driven-development
 - [ ] **T1.47 — Monthly payout scheduler** · `M` · deps: T1.46
-  - **Do:** A repeatable job on the 5th at 09:00 UTC. Aggregate the previous month's succeeded payments per driver, compute commission in integer cents, insert the `driver_payouts` row as `PROCESSING` *before* transferring, then transfer via Connect and reconcile to `PAID`. Isolate failures per driver. Per B3 (decided 2026-08-23) the basis is payments collected, not confirmed trips — no trip-level escrow.
+  - **Do:** A repeatable job on the 5th at 09:00 UTC. Aggregate the previous month's succeeded payments per driver, compute commission in integer cents, insert the `driver_payouts` row as `PROCESSING` _before_ transferring, then transfer via Connect and reconcile to `PAID`. Isolate failures per driver. Per B3 (decided 2026-08-23) the basis is payments collected, not confirmed trips — no trip-level escrow.
   - **Accept:** Commission arithmetic is exact integer cents with a documented rounding direction and no floating point anywhere; a driver with zero earnings gets no payout row rather than a zero transfer; one driver's transfer failing does not abort the batch; re-running the job does not double-pay, guarded by a period-scoped unique constraint.
   - **Verify:** Tests for rounding at awkward amounts, a zero-earning driver, a mid-batch failure, a double run, and a partial-month subscription. A reconciliation test asserting the sum of net plus commission equals gross for every row.
   - **Files:** `apps/worker/src/payout.job.ts`, `apps/api/src/payments/commission.ts`, `apps/worker/test/payout.test.ts`
@@ -755,6 +763,7 @@ do not assume a default command.
   - **Skills:** observability-and-instrumentation
 
 ### ✅ Checkpoint 1-D — money is correct before anyone's card is real
+
 - [ ] A charge succeeds end to end in test mode; a receipt is emailed and retrievable
 - [ ] The idempotency suite is green, including the in-flight-duplicate and DLQ-retention cases
 - [ ] Dunning walks the full timeline and pauses at the right point
@@ -823,6 +832,7 @@ do not assume a default command.
   - **Skills:** security-and-hardening
 
 ### ✅ Checkpoint 1-E — MVP feature complete
+
 - [ ] The full loop works on real devices: search → subscribe → accept → track → charge → payout → rate
 - [ ] An admin can verify a driver, watch live trips, and issue a refund — every action audited
 - [ ] Admin API proven unreachable from the public internet
@@ -899,7 +909,7 @@ do not assume a default command.
   - **Files:** `infra/monitors/*.tf`, `docs/runbooks/*.md`
   - **Skills:** observability-and-instrumentation
 - [ ] **T1.71 — Verify the telemetry itself** · `S` · deps: T1.70
-  - **Do:** Induce failures in staging — a database connection drop, a Stripe timeout, a WebSocket mass-disconnect, a failing notification job — and diagnose each *using telemetry alone*, without reading source.
+  - **Do:** Induce failures in staging — a database connection drop, a Stripe timeout, a WebSocket mass-disconnect, a failing notification job — and diagnose each _using telemetry alone_, without reading source.
   - **Accept:** Each induced failure is located from logs, metrics, and traces alone; no log line renders as `[object Object]`; every new metric series appears with the expected bounded labels; one request is followable across all services with no broken span.
   - **Accept (negative):** If any failure cannot be diagnosed from telemetry, that is an instrumentation gap and a blocking task, not a note.
   - **Verify:** A written record per induced failure: what was broken, what telemetry revealed it, how long it took.
@@ -970,6 +980,7 @@ do not assume a default command.
   - **Skills:** shipping-and-launch, git-workflow-and-versioning, code-simplification
 
 ### ✅ Checkpoint 1.5 — public launch
+
 - [ ] Pen test remediated and retested — hard gate
 - [ ] All five load scenarios pass; WCAG 2.1 AA verified; every alert test-fired with a runbook
 - [ ] Deletion and export proven across every store
@@ -983,26 +994,3 @@ do not assume a default command.
 
 Gate D 9 · Phase 0 44 · Phase 1A 13 · Phase 1B 11 · Phase 1C 15 · Phase 1D 12 · Phase 1E 9 ·
 Phase 1.5 21 — **134 tasks**, none larger than `M`.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

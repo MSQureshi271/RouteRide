@@ -10,6 +10,10 @@ allowBuilds:
   prisma: true
   "@prisma/client": true
   "@prisma/engines": true
+  protobufjs: set this to true or false
+  "@sentry/node-cpu-profiler": set this to true or false
+  msgpackr-extract: set this to true or false
+  workerd: set this to true or false
 
 overrides:
   postcss: "^8.5.26"

@@ -5,16 +5,6 @@ module.exports = {
   roots: ["<rootDir>/src"],
   testMatch: ["**/*.test.ts"],
   moduleNameMapper: {
-    "^(\\./.*)\\.js$": "$1",
-  },
-  transform: {
-    "^.+\\.tsx?$": [
-      "ts-jest",
-      {
-        diagnostics: {
-          ignoreCodes: [151002],
-        },
-      },
-    ],
+    "^(\\.{1,2}/.*)\\.js$": "$1",
   },
 };

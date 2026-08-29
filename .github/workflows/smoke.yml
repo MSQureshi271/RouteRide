@@ -1,0 +1,72 @@
+name: Smoke Tests
+
+on:
+  workflow_call:
+    inputs:
+      target_url:
+        description: "Base URL to execute smoke tests against (e.g., https://api-staging.routeride.com)"
+        required: true
+        type: string
+      environment:
+        description: "Target environment name"
+        required: true
+        type: string
+
+jobs:
+  smoke:
+    name: Smoke Tests (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Verify Health Endpoint (/health)
+        run: |
+          echo "Testing health check on ${{ inputs.target_url }}/health..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${{ inputs.target_url }}/health")
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "::error::Health check failed with status $HTTP_STATUS"
+            exit 1
+          fi
+          echo "Health check passed (HTTP 200)"
+
+      - name: 2. Verify Metrics Endpoint (/metrics)
+        run: |
+          echo "Testing Prometheus metrics on ${{ inputs.target_url }}/metrics..."
+          RESPONSE=$(curl -s --max-time 10 "${{ inputs.target_url }}/metrics")
+          if ! echo "$RESPONSE" | grep -q "http_request_duration_seconds"; then
+            echo "::error::Metrics endpoint did not return expected Prometheus histograms"
+            exit 1
+          fi
+          echo "Metrics endpoint verified"
+
+      - name: 3. Verify Security Headers
+        run: |
+          echo "Verifying security headers on ${{ inputs.target_url }}..."
+          HEADERS=$(curl -s -I --max-time 10 "${{ inputs.target_url }}/health")
+
+          if ! echo "$HEADERS" | grep -i "x-content-type-options: nosniff"; then
+            echo "::error::Missing X-Content-Type-Options header"
+            exit 1
+          fi
+
+          if ! echo "$HEADERS" | grep -i "x-frame-options"; then
+            echo "::error::Missing X-Frame-Options / Frameguard header"
+            exit 1
+          fi
+
+          echo "Security headers verified successfully"
+
+      - name: 4. Verify Error Envelope and Request ID
+        run: |
+          echo "Verifying 404 error envelope and requestId on ${{ inputs.target_url }}/non-existent-route..."
+          BODY=$(curl -s -w "\nHTTP_STATUS:%{http_code}" --max-time 10 "${{ inputs.target_url }}/non-existent-route")
+
+          if ! echo "$BODY" | grep -q "HTTP_STATUS:404"; then
+            echo "::error::Expected 404 status on unmapped route"
+            exit 1
+          fi
+
+          if ! echo "$BODY" | grep -q '"requestId"'; then
+            echo "::error::Error response missing requestId in meta envelope"
+            exit 1
+          fi
+
+          echo "Error envelope verified successfully"
