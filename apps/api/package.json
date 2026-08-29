@@ -10,7 +10,7 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests --coverage",
-    "test:integration": "jest --config jest.integration.config.ts --passWithNoTests --coverage",
+    "test:integration": "jest --config jest.integration.config.js --passWithNoTests --coverage",
     "prisma:emit": "prisma contract emit",
     "prisma:migrate": "prisma db migrate",
     "prisma:plan": "prisma migration plan",
