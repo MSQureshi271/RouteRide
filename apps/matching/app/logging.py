@@ -6,7 +6,7 @@ Rules:
  - Coordinate rounding (2 decimal places for lat/lng)
  - Redaction for sensitive keys
 """
-import logging
+import logging as stdlib_logging
 import os
 from typing import Any, MutableMapping
 import structlog
@@ -40,7 +40,7 @@ def redact_sensitive_processor(
 def configure_logging(service_name: str = "routeride-matching") -> None:
     """Configure structlog for production JSON logging."""
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    min_level: int = getattr(logging, log_level, logging.INFO)
+    min_level: int = getattr(stdlib_logging, log_level, stdlib_logging.INFO)
 
     structlog.configure(
         processors=[
