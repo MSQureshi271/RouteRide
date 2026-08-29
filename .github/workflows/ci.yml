@@ -238,7 +238,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Apply Prisma migrations
-        run: pnpm --filter api exec prisma migrate deploy
+        run: |
+          pnpm --filter api exec prisma migration check
+          pnpm --filter api exec prisma db migrate --show --db "$DATABASE_URL"
+          pnpm --filter api exec prisma db migrate --db "$DATABASE_URL"
         env:
           DATABASE_URL: postgresql://ci_user:${{ secrets.CI_DB_PASSWORD || 'ci_test_password_not_real' }}@localhost:5432/routeride_test
 
