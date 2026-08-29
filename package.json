@@ -39,16 +39,5 @@
   },
   "dependencies": {
     "zod": "^4.4.3"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@sentry/node-cpu-profiler",
-      "msgpackr-extract",
-      "protobufjs",
-      "workerd",
-      "esbuild",
-      "@prisma/engines",
-      "prisma"
-    ]
   }
 }
