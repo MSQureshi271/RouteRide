@@ -112,6 +112,10 @@ export const GoogleAuthRequestSchema = z
   })
   .strict();
 
+export type UserRole = z.infer<typeof UserRoleSchema>;
+export type UserStatus = z.infer<typeof UserStatusSchema>;
+export type UserSummary = z.infer<typeof UserSummarySchema>;
+export type AuthTokens = z.infer<typeof AuthTokensSchema>;
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 export type RefreshTokenRequest = z.infer<typeof RefreshTokenRequestSchema>;

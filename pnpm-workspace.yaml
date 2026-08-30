@@ -8,6 +8,7 @@ onlyBuiltDependencies:
   - "@prisma/engines"
   - "@sentry/node-cpu-profiler"
   - "@swc/core"
+  - bcrypt
   - esbuild
   - msgpackr-extract
   - prisma
@@ -21,6 +22,7 @@ allowBuilds:
   "@prisma/engines": true
   "@sentry/node-cpu-profiler": true
   "@swc/core": true
+  bcrypt: true
   esbuild: true
   msgpackr-extract: true
   prisma: true

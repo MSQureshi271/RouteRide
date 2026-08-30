@@ -261,37 +261,37 @@ do not assume a default command.
 
 ### 0.4 Identity (`identity`)
 
-- [ ] **T0.25 — Registration with password hashing** · `S` · deps: T0.15, T0.19
+- [x] **T0.25 — Registration with password hashing** · `S` · deps: T0.15, T0.19
   - **Do:** `POST /auth/register` accepting phone, full name, role, and password. bcrypt cost 12. Zod validation at the boundary (E.164 phone, password policy, role restricted to `CONSUMER` or `DRIVER`). Create the user as `PENDING_VERIFICATION`.
   - **Accept:** A caller cannot self-assign `ADMIN`, `INSTITUTION_ADMIN`, or `FLEET_ADMIN`; a duplicate phone returns `409`; the response never contains `passwordHash`; the endpoint is rate-limited 5/IP/10min.
   - **Verify:** Failing tests first for each of: weak password, malformed phone, privileged role, duplicate phone, response-field leakage.
   - **Files:** `apps/api/src/auth/auth.controller.ts`, `apps/api/src/auth/auth.service.ts`, `apps/api/test/auth-register.integration.test.ts`
   - **Skills:** test-driven-development, security-and-hardening, api-and-interface-design
-- [ ] **T0.26 — Phone OTP issue and verify** · `S` · deps: T0.25
+- [x] **T0.26 — Phone OTP issue and verify** · `S` · deps: T0.25
   - **Do:** Generate a single-use OTP, store it server-side in Redis with a 5-minute TTL, never return it in a response. Verify with a max of 3 attempts then a 15-minute lockout on that phone. Twilio adapter behind an interface, with a console adapter for local development.
   - **Accept:** The OTP never appears in any response or log; a fourth attempt is locked out even with the correct code; a verified user transitions to `ACTIVE`.
   - **Verify:** Tests for expiry, reuse, attempt exhaustion, lockout window, and the absence of the code from captured logs.
   - **Files:** `apps/api/src/auth/otp.service.ts`, `apps/api/src/notifications/sms.adapter.ts`, `apps/api/test/auth-otp.integration.test.ts`
   - **Skills:** security-and-hardening, test-driven-development
-- [ ] **T0.27 — JWT access tokens and refresh-token rotation** · `M` · deps: T0.26, T0.12
+- [x] **T0.27 — JWT access tokens and refresh-token rotation** · `M` · deps: T0.26, T0.12
   - **Do:** 15-minute HS256 access token carrying `sub`, `role`, `driverProfileId`, and `status`. Refresh token as an opaque 64-byte random string, stored only as a SHA-256 hash, rotated on every use with the previous token revoked. `POST /auth/login`, `/auth/refresh`, `/auth/logout`.
   - **Accept:** Replaying a used refresh token fails and revokes the whole chain; logout revokes; an expired access token returns `401 UNAUTHENTICATED`; no raw refresh token is ever persisted.
   - **Verify:** Tests for rotation, replay detection, revocation on logout, and expiry. A test asserts the stored value is a 64-hex-character digest and not the token.
   - **Files:** `apps/api/src/auth/token.service.ts`, `apps/api/src/auth/jwt.strategy.ts`, `apps/api/test/auth-tokens.integration.test.ts`
   - **Skills:** security-and-hardening, test-driven-development, doubt-driven-development
-- [ ] **T0.28 — Google OAuth, exchanged server-side** · `S` · deps: T0.27
+- [x] **T0.28 — Google OAuth, exchanged server-side** · `S` · deps: T0.27
   - **Do:** `POST /auth/oauth/google` taking the authorization code, exchanging it server-side, validating the ID token signature against Google's JWKS with a cached key set, and upserting the user. The client never handles a Google access token.
   - **Accept:** A forged or expired ID token is rejected; a returning user is matched rather than duplicated; `isNewUser` is accurate; Google being unreachable returns `503` with a usable message.
   - **Verify:** Tests with a locally-signed valid token, a wrong-issuer token, an expired token, and a wrong-audience token.
   - **Files:** `apps/api/src/auth/google.service.ts`, `apps/api/test/auth-google.integration.test.ts`
   - **Skills:** security-and-hardening, source-driven-development
-- [ ] **T0.29 — RBAC and ownership guards, with the matrix as tests** · `M` · deps: T0.27
+- [x] **T0.29 — RBAC and ownership guards, with the matrix as tests** · `M` · deps: T0.27
   - **Do:** A role guard plus a resource-ownership guard. Encode every row of the TRD §8.2 RBAC matrix as a parameterised test across all four roles. Add the abuse cases from the threat model: credential stuffing, token replay, horizontal privilege escalation via another user's rider id, vertical escalation via a forged role claim.
   - **Accept:** Every cell of the matrix is asserted, allow and deny alike; a `CONSUMER` cannot read another consumer's rider; a `DRIVER` cannot mark a trip they do not own.
   - **Verify:** The matrix test suite passes with no `skip`; each abuse case has a failing-then-passing test.
   - **Files:** `apps/api/src/common/guards/roles.guard.ts`, `apps/api/src/common/guards/ownership.guard.ts`, `apps/api/test/rbac-matrix.integration.test.ts`, `apps/api/test/auth-abuse.integration.test.ts`
   - **Skills:** security-and-hardening, test-driven-development, doubt-driven-development
-- [ ] **T0.30 — Password reset via OTP** · `S` · deps: T0.26, T0.27
+- [x] **T0.30 — Password reset via OTP** · `S` · deps: T0.26, T0.27
   - **Do:** `POST /auth/forgot-password` and `/auth/reset-password`. Reuse the OTP service. Revoke every refresh token for the user on a successful reset.
   - **Accept:** The response to `forgot-password` is identical whether or not the phone exists (no account enumeration); a reset invalidates all existing sessions; the reset OTP expires.
   - **Verify:** Tests asserting identical responses and timing for existing and non-existent phones, and that a pre-reset refresh token stops working.

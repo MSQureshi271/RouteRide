@@ -20,6 +20,9 @@ import "./instrument.js";
 // (tracing.ts exports nothing; it is imported for its side-effects)
 import "@routeride/config/tracing";
 
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+
 // ── 3. Environment ────────────────────────────────────────────────────────────
 import { loadEnv } from "@routeride/config";
 const env = loadEnv();
@@ -62,9 +65,9 @@ async function bootstrap(): Promise<void> {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", "data:", "https:"],
+          imgSrc: ["'self'", "data:", "https:", "validator.swagger.io"],
           connectSrc: ["'self'"],
           fontSrc: ["'self'"],
           objectSrc: ["'none'"],
@@ -79,6 +82,54 @@ async function bootstrap(): Promise<void> {
       },
       referrerPolicy: { policy: "same-origin" },
       frameguard: { action: "deny" },
+    },
+  );
+
+  // ── Swagger / OpenAPI UI ─────────────────────────────────────────────────────
+  let openapiSpec: Record<string, unknown> = {};
+  const possiblePaths = [
+    resolve(process.cwd(), "../../packages/contracts/openapi.json"),
+    resolve(process.cwd(), "../contracts/openapi.json"),
+    resolve(process.cwd(), "node_modules/@routeride/contracts/openapi.json"),
+  ];
+  for (const candidate of possiblePaths) {
+    if (existsSync(candidate)) {
+      try {
+        openapiSpec = JSON.parse(readFileSync(candidate, "utf-8")) as Record<
+          string,
+          unknown
+        >;
+        break;
+      } catch {
+        // continue to next candidate
+      }
+    }
+  }
+
+  await app.register(
+    (await import("@fastify/swagger")).default as unknown as Parameters<
+      typeof app.register
+    >[0],
+    {
+      mode: "static",
+      specification: {
+        document: openapiSpec,
+      },
+    },
+  );
+
+  await app.register(
+    (await import("@fastify/swagger-ui")).default as unknown as Parameters<
+      typeof app.register
+    >[0],
+    {
+      routePrefix: "/docs",
+      uiConfig: {
+        docExpansion: "list",
+        deepLinking: true,
+      },
+      staticCSP: true,
+      transformStaticCSP: (header: string) => header,
     },
   );
 
@@ -105,7 +156,7 @@ async function bootstrap(): Promise<void> {
 
   // ── API prefix ────────────────────────────────────────────────────────────
   app.setGlobalPrefix("api/v1", {
-    exclude: ["health", "metrics"], // health and metrics are at root
+    exclude: ["health", "metrics", "docs", "docs/(.*)"],
   });
 
   // ── Start ─────────────────────────────────────────────────────────────────
