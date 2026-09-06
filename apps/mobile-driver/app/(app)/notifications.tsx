@@ -1,0 +1,221 @@
+/**
+ * Driver In-App Notification Centre.
+ *
+ * Fetches notifications from GET /notifications.
+ * Allows tapping to mark read and route via driver deep link.
+ * Styled with Driver identity (Safety Emerald).
+ */
+import React, { useEffect, useState } from "react";
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import {
+  getApiClient,
+  Badge,
+  type BadgeVariant,
+  Card,
+  CardBody,
+  EmptyState,
+  Skeleton,
+  colors,
+  spacing,
+  typography,
+  resolveNotificationRoute,
+} from "@routeride/ui";
+
+interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  data: Record<string, string>;
+  isRead: boolean;
+  createdAt: string;
+}
+
+function getBadgeVariant(type: string): BadgeVariant {
+  if (type.includes("COMPLETED") || type.includes("VERIFIED")) return "success";
+  if (type.includes("DELAY") || type.includes("WARNING")) return "warning";
+  if (type.includes("CANCELLED") || type.includes("REJECTED")) return "error";
+  return "neutral";
+}
+
+export default function DriverNotificationsScreen() {
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await getApiClient().get("/notifications?limit=50");
+      setNotifications(res.data.data.data || []);
+    } catch (err) {
+      console.error("Failed to load notifications", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const handleNotificationPress = async (item: NotificationItem) => {
+    if (!item.isRead) {
+      try {
+        await getApiClient().patch(`/notifications/${item.id}/read`);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n)),
+        );
+      } catch (err) {
+        console.warn("Failed to mark notification read", err);
+      }
+    }
+
+    const route = resolveNotificationRoute("driver", {
+      type: item.type,
+      ...item.data,
+    });
+    if (route && route !== "/(app)/notifications") {
+      router.push(route as Parameters<typeof router.push>[0]);
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Driver Notifications</Text>
+        </View>
+        <View style={styles.skeletonList}>
+          <Skeleton height={80} />
+          <Skeleton height={80} />
+          <Skeleton height={80} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Driver Notifications</Text>
+      </View>
+
+      <FlatList
+        data={notifications}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchNotifications();
+            }}
+          />
+        }
+        ListEmptyComponent={
+          <EmptyState
+            icon={<Text style={{ fontSize: 40 }}>🚗</Text>}
+            title="No new alerts"
+            subtitle="Manifest changes and platform updates will appear here."
+          />
+        }
+        renderItem={({ item }) => (
+          <Pressable
+            onPress={() => handleNotificationPress(item)}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.isRead ? "" : "Unread: "}${item.title}. ${item.body}`}
+          >
+            <Card style={[styles.notifCard, !item.isRead && styles.unreadCard]}>
+              <CardBody style={styles.cardBody}>
+                <View style={styles.cardHeader}>
+                  <Badge
+                    variant={getBadgeVariant(item.type)}
+                    label={item.type.replace(/_/g, " ")}
+                  />
+                  <Text style={styles.timestamp}>
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </Text>
+                </View>
+                <Text
+                  style={[styles.title, !item.isRead && styles.unreadTitle]}
+                >
+                  {item.title}
+                </Text>
+                <Text style={styles.body}>{item.body}</Text>
+              </CardBody>
+            </Card>
+          </Pressable>
+        )}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: {
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainerLowest,
+  },
+  headerTitle: {
+    ...typography.headlineMd,
+    color: colors.secondary,
+  },
+  listContent: {
+    padding: spacing.base,
+    gap: spacing.sm,
+    flexGrow: 1,
+  },
+  skeletonList: {
+    padding: spacing.base,
+    gap: spacing.md,
+  },
+  notifCard: {
+    marginBottom: spacing.xs,
+  },
+  unreadCard: {
+    borderColor: colors.secondary,
+    borderLeftWidth: 4,
+    backgroundColor: colors.surfaceContainerLow,
+  },
+  cardBody: {
+    gap: spacing.xs,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.xs,
+  },
+  timestamp: {
+    ...typography.dataMono,
+    fontSize: 11,
+    color: colors.onSurfaceVariant,
+  },
+  title: {
+    ...typography.bodyLg,
+    fontFamily: "Inter-SemiBold",
+    color: colors.onSurface,
+  },
+  unreadTitle: {
+    color: colors.secondary,
+  },
+  body: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
+  },
+});

@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "RouteRide",
+    "slug": "routeride-consumer",
+    "version": "0.1.0",
+    "scheme": "routeride-consumer",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0b1c30"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.routeride.consumer",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "RouteRide uses your location to show nearby routes."
+      }
+    },
+    "android": {
+      "package": "com.routeride.consumer",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0b1c30"
+      },
+      "permissions": ["android.permission.ACCESS_FINE_LOCATION"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      "expo-splash-screen"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

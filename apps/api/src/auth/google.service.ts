@@ -133,8 +133,8 @@ export class GoogleService {
         VALUES (
           ${payload.email},
           ${payload.name ?? payload.email},
-          ${assignedRole}::user_role,
-          'ACTIVE'::user_status,
+          ${assignedRole},
+          'ACTIVE',
           ${payload.picture ?? null},
           ${`google:${payload.sub}`}
         )

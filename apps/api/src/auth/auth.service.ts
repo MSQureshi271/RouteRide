@@ -32,7 +32,7 @@ import type {
 
 const BCRYPT_ROUNDS = 12;
 
-interface DbUserRow {
+export interface DbUserRow {
   id: string;
   phone: string;
   full_name: string;
@@ -78,8 +78,8 @@ export class AuthService {
         ${dto.phone},
         ${dto.fullName},
         ${passwordHash},
-        ${dto.role}::user_role,
-        'PENDING_VERIFICATION'::user_status,
+        ${dto.role},
+        'PENDING_VERIFICATION',
         ${dto.email ?? null}
       )
       RETURNING id, phone, full_name, role, status, email, profile_photo_url, created_at

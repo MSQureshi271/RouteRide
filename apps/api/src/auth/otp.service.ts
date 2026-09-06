@@ -25,6 +25,7 @@ import { createHash, randomInt } from "node:crypto";
 import type { Redis } from "ioredis";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { SmsAdapter } from "../notifications/sms.adapter.js";
+import type { DbUserRow } from "./auth.service.js";
 
 const OTP_TTL_SECONDS = 300; // 5 minutes
 const LOCKOUT_TTL_SECONDS = 900; // 15 minutes
@@ -72,7 +73,7 @@ export class OtpService {
    * On success: transitions user to ACTIVE, clears all OTP keys.
    * On failure: increments attempt counter; locks after MAX_ATTEMPTS.
    */
-  async verifyOtp(phone: string, code: string): Promise<void> {
+  async verifyOtp(phone: string, code: string): Promise<DbUserRow | null> {
     const lockoutKey = otpLockoutKey(phone);
     const isLocked = await this.redis.exists(lockoutKey);
     if (isLocked) {
@@ -122,11 +123,22 @@ export class OtpService {
     // Transition user to ACTIVE
     await this.prisma.sql`
       UPDATE users
-      SET status = 'ACTIVE'::user_status
-      WHERE phone = ${phone} AND status = 'PENDING_VERIFICATION'::user_status
+      SET status = 'ACTIVE'
+      WHERE phone = ${phone} AND status = 'PENDING_VERIFICATION'
     `;
 
+    const userRows = (await this.prisma.sql`
+      SELECT u.id, u.phone, u.full_name, u.role, u.status, u.email,
+             u.profile_photo_url, u.created_at,
+             dp.id AS driver_profile_id
+      FROM users u
+      LEFT JOIN driver_profiles dp ON dp.user_id = u.id
+      WHERE u.phone = ${phone}
+      LIMIT 1
+    `) as unknown as DbUserRow[];
+
     this.logger.log({ event: "otp.verified", phone });
+    return userRows[0] ?? null;
   }
 
   // ─── Reset OTP (for password reset flow) ─────────────────────────────────

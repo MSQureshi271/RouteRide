@@ -87,7 +87,7 @@ export class PasswordResetService {
     await this.prisma.sql`
       UPDATE users
       SET password_hash = ${newHash}
-      WHERE id = ${user.id}::uuid
+      WHERE id = ${user.id}
     `;
 
     await this.tokenService.revokeAllForUser(user.id);

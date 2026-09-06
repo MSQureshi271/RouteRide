@@ -152,7 +152,7 @@ async function main(): Promise<void> {
   for (const d of driversJson) {
     await db.sql`
       INSERT INTO users (id, phone, full_name, role, status)
-      VALUES (${d.userId}::uuid, ${d.phone}, ${d.fullName}, ${UserRole.DRIVER}::user_role, ${UserStatus.ACTIVE}::user_status)
+      VALUES (${d.userId}, ${d.phone}, ${d.fullName}, ${UserRole.DRIVER}, ${UserStatus.ACTIVE})
       ON CONFLICT (id) DO UPDATE
       SET phone = EXCLUDED.phone, full_name = EXCLUDED.full_name, role = EXCLUDED.role, status = EXCLUDED.status;
     `;
@@ -162,9 +162,9 @@ async function main(): Promise<void> {
         id, user_id, licence_number, vehicle_make, vehicle_model, vehicle_year, vehicle_colour,
         plate_number, seat_capacity, operating_days, base_price_cents, status, verification_tier, route_polyline
       ) VALUES (
-        ${d.id}::uuid, ${d.userId}::uuid, ${d.licenceNumber}, ${d.vehicleMake}, ${d.vehicleModel}, ${d.vehicleYear}, ${d.vehicleColour},
-        ${d.plateNumber}, ${d.seatCapacity}, ${d.operatingDays}, ${d.basePriceCents}, ${d.status}::driver_status, ${d.verificationTier}::verify_tier,
-        ST_GeomFromText(${d.routePolyline}, 4326)::geography
+        ${d.id}, ${d.userId}, ${d.licenceNumber}, ${d.vehicleMake}, ${d.vehicleModel}, ${d.vehicleYear}, ${d.vehicleColour},
+        ${d.plateNumber}, ${d.seatCapacity}, ${d.operatingDays}, ${d.basePriceCents}, ${d.status}, ${d.verificationTier},
+        ST_GeomFromText(${d.routePolyline}, 4326)
       ) ON CONFLICT (id) DO UPDATE
       SET licence_number = EXCLUDED.licence_number, vehicle_make = EXCLUDED.vehicle_make,
           vehicle_model = EXCLUDED.vehicle_model, vehicle_year = EXCLUDED.vehicle_year,
@@ -182,14 +182,14 @@ async function main(): Promise<void> {
   for (const c of consumersJson) {
     await db.sql`
       INSERT INTO users (id, phone, full_name, role, status)
-      VALUES (${c.userId}::uuid, ${c.phone}, ${c.fullName}, ${UserRole.CONSUMER}::user_role, ${UserStatus.ACTIVE}::user_status)
+      VALUES (${c.userId}, ${c.phone}, ${c.fullName}, ${UserRole.CONSUMER}, ${UserStatus.ACTIVE})
       ON CONFLICT (id) DO UPDATE
       SET phone = EXCLUDED.phone, full_name = EXCLUDED.full_name, role = EXCLUDED.role, status = EXCLUDED.status;
     `;
 
     await db.sql`
       INSERT INTO consumer_profiles (id, user_id, emergency_contact_name, emergency_contact_phone)
-      VALUES (${c.id}::uuid, ${c.userId}::uuid, ${c.emergencyContactName}, ${c.emergencyContactPhone})
+      VALUES (${c.id}, ${c.userId}, ${c.emergencyContactName}, ${c.emergencyContactPhone})
       ON CONFLICT (id) DO UPDATE
       SET emergency_contact_name = EXCLUDED.emergency_contact_name,
           emergency_contact_phone = EXCLUDED.emergency_contact_phone;
@@ -202,10 +202,10 @@ async function main(): Promise<void> {
     await db.sql`
       INSERT INTO riders (id, consumer_profile_id, name, home_address_text, home_location, dest_address_text, dest_location, notes)
       VALUES (
-        ${r.id}::uuid, ${r.consumerProfileId}::uuid, ${r.name}, ${r.homeAddressText},
-        ST_GeomFromText(${r.homeLocation}, 4326)::geography,
+        ${r.id}, ${r.consumerProfileId}, ${r.name}, ${r.homeAddressText},
+        ST_GeomFromText(${r.homeLocation}, 4326),
         ${r.destAddressText},
-        ST_GeomFromText(${r.destLocation}, 4326)::geography,
+        ST_GeomFromText(${r.destLocation}, 4326),
         ${r.notes ?? null}
       ) ON CONFLICT (id) DO UPDATE
       SET name = EXCLUDED.name, home_address_text = EXCLUDED.home_address_text,
@@ -225,12 +225,13 @@ async function main(): Promise<void> {
         agreed_pickup_location, agreed_dropoff_location, pickup_address_text, dropoff_address_text,
         monthly_price_cents, currency, status, start_date, next_billing_date
       ) VALUES (
-        ${s.id}::uuid, ${s.riderId}::uuid, ${s.driverProfileId}::uuid, ${s.type}::sub_type,
-        ${s.agreedPickupTime}::time, ${s.agreedDropoffTime}::time,
-        ST_GeomFromText(${s.agreedPickupLocation}, 4326)::geography,
-        ST_GeomFromText(${s.agreedDropoffLocation}, 4326)::geography,
+        ${s.id}, ${s.riderId}, ${s.driverProfileId}, ${s.type},
+        ${`${s.startDate}T${s.agreedPickupTime}Z`}::timestamptz,
+        ${`${s.startDate}T${s.agreedDropoffTime}Z`}::timestamptz,
+        ST_GeomFromText(${s.agreedPickupLocation}, 4326),
+        ST_GeomFromText(${s.agreedDropoffLocation}, 4326),
         ${s.pickupAddressText}, ${s.dropoffAddressText}, ${s.monthlyPriceCents},
-        ${s.currency}, ${s.status}::sub_status, ${s.startDate}::date, ${s.nextBillingDate}::date
+        ${s.currency}, ${s.status}, ${s.startDate}::timestamptz, ${s.nextBillingDate}::timestamptz
       ) ON CONFLICT (id) DO UPDATE
       SET type = EXCLUDED.type, agreed_pickup_time = EXCLUDED.agreed_pickup_time,
           agreed_dropoff_time = EXCLUDED.agreed_dropoff_time, agreed_pickup_location = EXCLUDED.agreed_pickup_location,

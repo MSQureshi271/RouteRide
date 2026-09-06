@@ -300,37 +300,37 @@ do not assume a default command.
 
 ### 0.5 Mobile shells and notification plumbing (`mobile-shell`, `notifications`)
 
-- [ ] **T0.31 — Expo app scaffolds and the network layer** · `M` · deps: T0.14, T-D.01
-  - **Do:** Two Expo SDK 53 apps sharing `packages/ui`. React Navigation 7 shells per role. Access token in memory in a Zustand store and never on disk; refresh token in `expo-secure-store`. Axios interceptors injecting the bearer token and performing a single-flight refresh on `401`. TanStack Query provider with sane defaults. `i18next` scaffolded with English only.
+- [x] **T0.31 — Expo app scaffolds and the network layer** · `M` · deps: T0.14, T-D.01
+  - **Do:** Two Expo SDK 57 apps sharing `packages/ui`. React Navigation 7 shells per role. Access token in memory in a Zustand store and never on disk; refresh token in `expo-secure-store`. Axios interceptors injecting the bearer token and performing a single-flight refresh on `401`. TanStack Query provider with sane defaults. `i18next` scaffolded with English only.
   - **Accept:** The access token is never written to disk; two concurrent `401`s trigger exactly one refresh; a failed refresh logs the user out cleanly rather than looping.
   - **Verify:** Unit test firing three parallel requests against a `401`-then-`200` mock server and asserting one refresh call; a test asserting `AsyncStorage` contains no token.
   - **Files:** `apps/mobile-*/app/_layout.tsx`, `packages/ui/src/api/client.ts`, `packages/ui/src/api/client.test.ts`, `packages/ui/src/store/auth.ts`
   - **Skills:** frontend-ui-engineering, source-driven-development, security-and-hardening
-- [ ] **T0.32 — Design tokens and the core component library** · `M` · deps: T0.31
+- [x] **T0.32 — Design tokens and the core component library** · `M` · deps: T0.31
   - **Do:** A spacing scale, a semantic colour palette with verified contrast ratios, a type scale, and a corner-radius scale — then `Button`, `Input`, `Select`, `Card`, `Sheet`, `Badge`, `Skeleton`, `EmptyState`, `ErrorState`, `Toast`. No raw hex values and no off-scale spacing in any component.
   - **Accept:** Every interactive component is keyboard and screen-reader reachable with an accessible label; text contrast is at least 4.5:1 and large text 3:1; the palette is not the default purple/indigo AI aesthetic; no gradients or stacked shadows unless a token defines them.
   - **Verify:** A contrast test asserting every foreground/background token pair meets its ratio; render each component in a test and assert the accessibility role and label; visual check at 320px, 768px, 1024px, 1440px.
   - **Files:** `packages/ui/src/tokens.ts`, `packages/ui/src/components/**`, `packages/ui/src/tokens.test.ts`
   - **Skills:** frontend-ui-engineering
-- [ ] **T0.33 — Auth screens for both apps** · `M` · deps: T0.32, T0.28
+- [x] **T0.33 — Auth screens for both apps** · `M` · deps: T0.32, T0.28
   - **Do:** Register, OTP entry, login, forgot/reset password, and Google sign-in. React Hook Form plus the Zod schemas from `packages/contracts` so client and server validate identically.
   - **Accept:** Every field error is announced and programmatically associated with its input; loading, error, and empty states exist on every screen; the OTP screen shows the remaining attempt count and the lockout state; no error message reveals whether an account exists.
   - **Verify:** Component tests for the validation, error, and loading states; tab through each screen and confirm focus order; a `401` from the server surfaces a readable message, not a raw envelope.
-  - **Files:** `apps/mobile-*/app/(auth)/*.tsx`, `packages/ui/src/forms/*`, `apps/mobile-consumer/app/(auth)/login.test.tsx`
+  - **Files:** `apps/mobile-*/app/(auth)/*.tsx`, `packages/ui/src/forms/*`, `apps/mobile-*/__tests__/login.test.tsx`
   - **Skills:** frontend-ui-engineering, test-driven-development
-- [ ] **T0.34 — Detox harness and the first end-to-end flow** · `S` · deps: T0.33
+- [x] **T0.34 — Detox harness and the first end-to-end flow** · `S` · deps: T0.33
   - **Do:** Configure Detox for iOS simulator and Android emulator. First flow: register → verify OTP → land in the correct role shell, for both apps.
   - **Accept:** The flow passes on both platforms against a seeded local backend; the run is repeatable without manual reset.
   - **Verify:** `npx detox test --configuration ios.sim.debug` and the Android equivalent both green; wired into CI as a nightly job, not a per-PR gate.
   - **Files:** `apps/mobile-*/e2e/register.e2e.ts`, `apps/mobile-*/.detoxrc.js`, `.github/workflows/e2e-nightly.yml`
   - **Skills:** test-driven-development, ci-cd-and-automation
-- [ ] **T0.35 — Notification worker, adapters, and the in-app centre** · `M` · deps: T0.16, T0.12
+- [x] **T0.35 — Notification worker, adapters, and the in-app centre** · `M` · deps: T0.16, T0.12
   - **Do:** A BullMQ worker on Redis 7 streams. Adapters for FCM (`firebase-admin`), SendGrid, and Twilio behind one `NotificationChannel` interface. Persist every notification to `notifications` regardless of delivery outcome. Retry three times with 1s/10s/60s backoff. Deduplicate on SHA-256 of `(userId, type, entityId, date)` with a 1-hour Redis TTL. Drop and clear `fcm_token` on an `UNREGISTERED` response. Endpoints for listing and marking read, with the unread count cached for 10s.
   - **Accept:** The same logical notification enqueued twice within an hour sends once; a failing channel does not lose the in-app record; the type registry from TRD §9.2 is exhaustive and typed.
   - **Verify:** Tests for dedupe, retry-then-succeed, retry-exhausted, stale-token cleanup, and the in-app record surviving a channel failure.
   - **Files:** `apps/api/src/notifications/*.ts`, `apps/worker/src/notification.worker.ts`, `apps/api/test/notifications.integration.test.ts`
   - **Skills:** observability-and-instrumentation, test-driven-development, api-and-interface-design
-- [ ] **T0.36 — FCM registration and handlers in both apps** · `S` · deps: T0.35, T0.31
+- [x] **T0.36 — FCM registration and handlers in both apps** · `S` · deps: T0.35, T0.31
   - **Do:** Request permission with a purpose string, register the token against the user, refresh it on rotation, and handle foreground, background, and cold-start-from-notification for every type in the registry. An in-app notification centre screen with read/unread state.
   - **Accept:** Tapping a notification deep-links to the right screen from all three app states; denying permission degrades gracefully rather than blocking the app; the token is cleared on logout.
   - **Verify:** Send one of each notification type to a device in all three states and confirm the destination; a test asserts logout clears the server-side token.

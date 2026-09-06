@@ -74,7 +74,7 @@ export class TokenService {
 
     await this.prisma.sql`
       INSERT INTO refresh_tokens (token_hash, user_id, expires_at)
-      VALUES (${tokenHash}, ${userId}::uuid, ${expiresAt}::timestamptz)
+      VALUES (${tokenHash}, ${userId}, ${expiresAt}::timestamptz)
     `;
 
     return {
@@ -129,7 +129,7 @@ export class TokenService {
       SELECT u.id, u.role, u.status, dp.id AS driver_profile_id
       FROM users u
       LEFT JOIN driver_profiles dp ON dp.user_id = u.id
-      WHERE u.id = ${stored.user_id}::uuid
+      WHERE u.id = ${stored.user_id}
       LIMIT 1
     `) as unknown as UserWithDriverProfile[];
 
@@ -163,7 +163,7 @@ export class TokenService {
     await this.prisma.sql`
       UPDATE refresh_tokens
       SET revoked_at = NOW()
-      WHERE user_id = ${userId}::uuid AND revoked_at IS NULL
+      WHERE user_id = ${userId} AND revoked_at IS NULL
     `;
   }
 }

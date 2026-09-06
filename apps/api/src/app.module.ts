@@ -26,6 +26,7 @@ import { MetricsModule } from "./metrics/metrics.module.js";
 import { RequestIdMiddleware } from "./common/request-id.middleware.js";
 import { GeneralRateLimitGuard } from "./common/rate-limit.js";
 import { AuthModule } from "./auth/auth.module.js";
+import { NotificationModule } from "./notifications/notification.module.js";
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { AuthModule } from "./auth/auth.module.js";
     HealthModule,
     MetricsModule,
     AuthModule,
+    NotificationModule,
   ],
   providers: [
     // Global rate limit guard — applied to every request

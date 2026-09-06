@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "RouteRide Driver",
+    "slug": "routeride-driver",
+    "version": "0.1.0",
+    "scheme": "routeride-driver",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#006c49"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.routeride.driver",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "RouteRide Driver uses your location to track your active route.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "RouteRide Driver uses your background location to track your route while driving.",
+        "UIBackgroundModes": ["location", "fetch", "remote-notification"]
+      }
+    },
+    "android": {
+      "package": "com.routeride.driver",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#006c49"
+      },
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      ["expo-task-manager", {}],
+      "expo-splash-screen"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

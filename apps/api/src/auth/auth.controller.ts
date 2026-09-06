@@ -26,6 +26,8 @@ import {
   RefreshTokenRequestSchema,
   GoogleAuthRequestSchema,
   SendOtpRequestSchema,
+  type AuthTokens,
+  type UserSummary,
 } from "@routeride/contracts";
 import { AuthService } from "./auth.service.js";
 import { OtpService } from "./otp.service.js";
@@ -77,7 +79,9 @@ export class AuthController {
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.flatten());
     }
-    return this.authService.register(parsed.data);
+    const result = await this.authService.register(parsed.data);
+    await this.otpService.sendOtp(parsed.data.phone);
+    return result;
   }
 
   // ─── OTP (T0.26) ──────────────────────────────────────────────────────────
@@ -97,15 +101,45 @@ export class AuthController {
 
   @Public()
   @UseGuards(OtpRateLimitGuard)
-  @Post("otp/verify")
+  @Post(["otp/verify", "verify-otp"])
   @HttpCode(HttpStatus.OK)
   async verifyOtp(@Body() body: unknown) {
     const parsed = VerifyOtpRequestSchema.safeParse(body);
     if (!parsed.success) {
       throw new BadRequestException(parsed.error.flatten());
     }
-    await this.otpService.verifyOtp(parsed.data.phone, parsed.data.code);
-    return { message: "Phone number verified. Account is now active." };
+    const user = await this.otpService.verifyOtp(
+      parsed.data.phone,
+      parsed.data.code,
+    );
+
+    let tokens: AuthTokens | undefined;
+    let userSummary: UserSummary | undefined;
+
+    if (user) {
+      tokens = await this.tokenService.issueTokenPair(
+        user.id,
+        user.role,
+        user.status,
+        user.driver_profile_id ?? undefined,
+      );
+      userSummary = {
+        id: user.id,
+        phone: user.phone,
+        fullName: user.full_name,
+        role: user.role as UserSummary["role"],
+        status: user.status as UserSummary["status"],
+        email: user.email ?? null,
+        profilePhotoUrl: user.profile_photo_url ?? null,
+        createdAt: new Date(user.created_at).toISOString(),
+      };
+    }
+
+    return {
+      message: "Phone number verified. Account is now active.",
+      user: userSummary,
+      tokens,
+    };
   }
 
   // ─── Login / Tokens (T0.27) ───────────────────────────────────────────────

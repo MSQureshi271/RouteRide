@@ -153,6 +153,10 @@ export class ErrorFilter implements ExceptionFilter {
 
     const { code, status, details } = resolveErrorCode(exception);
 
+    if (status >= 500) {
+      console.error("[ErrorFilter Internal Error]:", exception);
+    }
+
     const body: ErrorEnvelope = {
       error: {
         code,
