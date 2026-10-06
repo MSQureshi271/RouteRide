@@ -164,6 +164,7 @@ export class AuthService {
         status: user.status as UserSummary["status"],
         email: user.email ?? null,
         profilePhotoUrl: user.profile_photo_url ?? null,
+        driverProfileId: user.driver_profile_id ?? null,
         createdAt: new Date(user.created_at).toISOString(),
       },
       tokens,

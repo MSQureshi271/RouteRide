@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any */
 /**
  * Login screen component tests (T0.33).
  *
@@ -26,6 +27,19 @@ jest.mock("expo-router", () => ({
     push: (...args: unknown[]) => mockPush(...args),
   },
 }));
+
+// Mock react-native-maps
+jest.mock("react-native-maps", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+  const MockMapView = (props: any) => React.createElement(View, props);
+  return {
+    __esModule: true,
+    default: MockMapView,
+    Polyline: (props: any) => React.createElement(View, props),
+    Marker: (props: any) => React.createElement(View, props),
+  };
+});
 
 // Mock @routeride/ui
 const mockPost = jest.fn();

@@ -27,6 +27,9 @@ import { RequestIdMiddleware } from "./common/request-id.middleware.js";
 import { GeneralRateLimitGuard } from "./common/rate-limit.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { NotificationModule } from "./notifications/notification.module.js";
+import { DriversModule } from "./drivers/drivers.module.js";
+import { ConsumersModule } from "./consumers/consumers.module.js";
+import { MapsModule } from "./maps/maps.module.js";
 
 @Module({
   imports: [
@@ -86,6 +89,9 @@ import { NotificationModule } from "./notifications/notification.module.js";
     MetricsModule,
     AuthModule,
     NotificationModule,
+    DriversModule,
+    ConsumersModule,
+    MapsModule,
   ],
   providers: [
     // Global rate limit guard — applied to every request

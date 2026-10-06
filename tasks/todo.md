@@ -339,50 +339,50 @@ do not assume a default command.
 
 ### 0.6 Driver onboarding and consumer profiles
 
-- [ ] **T0.37 — Driver profile and vehicle onboarding** · `M` · deps: T0.29
+- [x] **T0.37 — Driver profile and vehicle onboarding** · `M` · deps: T0.29
   - **Do:** `POST /drivers/onboard` (personal and vehicle details), `GET /drivers/me`, and status gating that keeps a `PENDING` driver out of search results. Unique plate number enforced at the database level.
   - **Accept:** Seat capacity is bounded 1–50; vehicle year is sane; a duplicate plate returns `409`; a second onboarding attempt by the same user returns `409` rather than creating a second profile; the profile starts as `PENDING`.
   - **Verify:** Tests for each validation bound, the duplicate-plate conflict, the duplicate-profile conflict, and a `PENDING` driver's absence from a search once `T1.08` exists.
   - **Files:** `apps/api/src/drivers/drivers.controller.ts`, `apps/api/src/drivers/drivers.service.ts`, `apps/api/test/driver-onboard.integration.test.ts`
   - **Skills:** test-driven-development, api-and-interface-design
-- [ ] **T0.38 — Document upload via pre-signed S3 URLs** · `M` · deps: T0.37, T0.20
+- [x] **T0.38 — Document upload via pre-signed S3 URLs** · `M` · deps: T0.37, T0.20
   - **Do:** Issue a pre-signed `PUT` with a 5-minute TTL scoped to one key. Validate the declared MIME type and the actual magic bytes server-side on confirmation, cap the size, and record the document with an expiry date. Leave a hook for the ClamAV scan (the Lambda itself is Phase 2). Documents are served only through short-lived pre-signed `GET`s to admins.
   - **Accept:** Only `image/jpeg`, `image/png`, and `application/pdf` are accepted; a file whose magic bytes disagree with its declared type is rejected; the URL expires; no document is ever publicly readable.
   - **Verify:** Tests uploading a renamed executable, an oversized file, and an expired URL — all rejected. A test asserts the object ACL is private.
   - **Files:** `apps/api/src/drivers/documents.controller.ts`, `apps/api/src/storage/s3.service.ts`, `apps/api/test/documents.integration.test.ts`
   - **Skills:** security-and-hardening, test-driven-development
-- [ ] **T0.39 — Route polyline definition and validation** · `M` · deps: T0.37, T0.11
+- [x] **T0.39 — Route polyline definition and validation** · `M` · deps: T0.37, T0.11
   - **Do:** `PUT /drivers/me/route` accepting GeoJSON `LineString`. Validate coordinate ranges, a minimum point count, total length bounds, and that the whole line falls inside the launch city's bounding box. Store as `GEOGRAPHY(LINESTRING, 4326)`. Reject a self-intersecting or zero-length line.
   - **Accept:** Coordinates outside ±90/±180 are rejected; a two-identical-point line is rejected; a line outside the city bbox is rejected with a specific code; the stored SRID is 4326.
   - **Verify:** Property tests over generated coordinate sets; a round-trip test asserting `ST_NumPoints` and `ST_Length` match the input within tolerance.
   - **Files:** `apps/api/src/drivers/route.controller.ts`, `packages/contracts/src/geo.ts`, `apps/api/test/driver-route.integration.test.ts`
   - **Skills:** api-and-interface-design, test-driven-development, doubt-driven-development
-- [ ] **T0.40 — Availability, pricing, and platform guardrails** · `S` · deps: T0.37, T-D.06
+- [x] **T0.40 — Availability, pricing, and platform guardrails** · `S` · deps: T0.37, T-D.06
   - **Do:** `PATCH /drivers/me` for `operatingDays` (0–6, non-empty, unique) and `basePriceCents`, clamped to the platform min/max from configuration. Reject a price change while active subscriptions reference the old price without an explicit migration flag.
   - **Accept:** A price outside the range returns `422` naming the bounds; an empty or duplicated operating-days array is rejected; changing days that would orphan an active subscription is refused.
   - **Verify:** Tests at both price bounds, one outside each, and one attempting to drop an operating day still committed to an active subscription.
   - **Files:** `apps/api/src/drivers/drivers.controller.ts`, `apps/api/test/driver-pricing.integration.test.ts`
   - **Skills:** api-and-interface-design, test-driven-development
-- [ ] **T0.41 — Consumer profile and emergency contact** · `S` · deps: T0.29
+- [x] **T0.41 — Consumer profile and emergency contact** · `S` · deps: T0.29
   - **Do:** `GET` and `PATCH /consumers/me` for the emergency contact name and phone. Create the consumer profile on first access.
   - **Accept:** The emergency phone is E.164-validated; the response excludes `stripeCustomerId`; a driver-role token is rejected with `403`.
   - **Verify:** Tests for validation, field exclusion, and the role rejection.
   - **Files:** `apps/api/src/consumers/consumers.controller.ts`, `apps/api/test/consumer-profile.integration.test.ts`
   - **Skills:** test-driven-development, security-and-hardening
-- [ ] **T0.42 — Rider CRUD with geocoding** · `M` · deps: T0.41, T-D.08
+- [x] **T0.42 — Rider CRUD with geocoding** · `M` · deps: T0.41, T-D.08
   - **Do:** Create, list, update, and delete riders. Geocode home and destination addresses to `GEOGRAPHY(POINT)` via the Maps adapter, storing both the display text and the point. Block deletion when an active subscription exists. Treat the Maps response as untrusted and validate its shape before use.
   - **Accept:** A rider belongs to exactly one consumer and is invisible to every other consumer; deleting a rider with an active subscription returns `409`; an unresolvable address returns `422 NO_ROUTE_FOUND`; the Maps adapter failing returns `503`, never a partial record.
   - **Verify:** Tests for cross-consumer access, the delete conflict, geocode failure, and a malformed Maps response being rejected rather than stored.
   - **Files:** `apps/api/src/riders/riders.controller.ts`, `apps/api/src/maps/geocode.service.ts`, `apps/api/test/riders.integration.test.ts`
   - **Skills:** api-and-interface-design, security-and-hardening, test-driven-development
 
-- [ ] **T0.43 — Driver onboarding wizard (mobile)** · `M` · deps: T0.37, T0.38, T0.39, T0.40, T0.32
+- [x] **T0.43 — Driver onboarding wizard (mobile)** · `M` · deps: T0.37, T0.38, T0.39, T0.40, T0.32
   - **Do:** A four-step wizard — personal and vehicle, documents, route drawing on `react-native-maps`, availability and pricing — with resumable progress and a "pending verification" state screen.
   - **Accept:** Progress survives an app kill; every step has loading, error, and empty states; the route step shows the drawn line and rejects an invalid one with a specific message; the pending screen explains what happens next and how long it takes.
   - **Verify:** Component tests per step; a Detox flow completing the whole wizard and landing on the pending screen; tab and screen-reader pass on each step.
   - **Files:** `apps/mobile-driver/app/(onboarding)/*.tsx`, `packages/ui/src/maps/RouteDrawer.tsx`
   - **Skills:** frontend-ui-engineering, source-driven-development
-- [ ] **T0.44 — Consumer profile and rider management (mobile)** · `M` · deps: T0.41, T0.42, T0.32
+- [x] **T0.44 — Consumer profile and rider management (mobile)** · `M` · deps: T0.41, T0.42, T0.32
   - **Do:** Profile and emergency-contact screens, plus rider add, edit, list, and delete with address autocomplete and a map confirmation pin.
   - **Accept:** Each rider card shows name, photo, home, and destination; the delete confirmation names the consequence; a delete blocked by an active subscription shows why, not a raw `409`; the empty state invites adding a first rider.
   - **Verify:** Component tests for the states; a Detox flow adding a rider and seeing it listed; accessibility pass.

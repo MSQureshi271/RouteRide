@@ -29,6 +29,7 @@ import {
   typography,
 } from "@routeride/ui";
 import { LoginRequestSchema, type LoginRequest } from "@routeride/contracts";
+import { fetchAndNavigateToOnboardingStep } from "../../src/navigation/onboardingRouter";
 
 export default function DriverLoginScreen() {
   const [serverError, setServerError] = useState<string | null>(null);
@@ -51,7 +52,11 @@ export default function DriverLoginScreen() {
       const { tokens, user } = response.data.data;
       await setTokens(tokens, user);
       setUser(user);
-      router.replace("/(app)");
+      try {
+        await fetchAndNavigateToOnboardingStep();
+      } catch {
+        router.replace("/(app)" as never);
+      }
     } catch {
       setServerError("Login failed. Please check your number and password.");
     }

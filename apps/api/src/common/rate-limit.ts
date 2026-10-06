@@ -18,7 +18,9 @@ import {
   ThrottlerGuard,
   ThrottlerException,
   ThrottlerLimitDetail,
+  ThrottlerRequest,
 } from "@nestjs/throttler";
+
 interface RequestWithHeaders {
   headers: Record<string, string | string[] | undefined>;
   ip?: string;
@@ -36,18 +38,74 @@ function getIp(request: RequestWithHeaders): string {
   return request.ip ?? "unknown";
 }
 
-/** Extract user ID from authenticated JWT payload on the request object. */
+/**
+ * Extract user ID from authenticated JWT payload on the request object,
+ * or safely decode the Bearer token claims if the global APP_GUARD executes
+ * before controller-scoped JwtAuthGuard has attached request.user.
+ */
 function getUserId(
-  request: RequestWithHeaders & { user?: { id?: string } },
+  request: RequestWithHeaders & { user?: { sub?: string; id?: string } },
 ): string {
-  const user = (request as unknown as { user?: { id?: string } }).user;
-  return user?.id ?? getIp(request); // fall back to IP if not authenticated
+  const user = (request as unknown as { user?: { sub?: string; id?: string } })
+    .user;
+  if (user?.sub) return user.sub;
+  if (user?.id) return user.id;
+
+  // If request.user is not yet populated (e.g. global APP_GUARD executes before controller-level JwtAuthGuard),
+  // extract sub claim directly from Bearer token if present
+  const authHeader =
+    request.headers["authorization"] ?? request.headers["Authorization"];
+  if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.slice(7).trim();
+      const parts = token.split(".");
+      const payloadPart = parts[1];
+      if (parts.length === 3 && typeof payloadPart === "string") {
+        const payloadJson = Buffer.from(payloadPart, "base64url").toString(
+          "utf8",
+        );
+        const payload = JSON.parse(payloadJson);
+        if (typeof payload?.sub === "string" && payload.sub.length > 0) {
+          return payload.sub;
+        }
+      }
+    } catch {
+      // Ignore token parse error and fall back to IP
+    }
+  }
+
+  return getIp(request); // fall back to IP if not authenticated
+}
+
+// ─── Base Named Throttler Guard ───────────────────────────────────────────────
+
+/**
+ * Base throttler guard that only evaluates the specific named throttler it is assigned to.
+ *
+ * In @nestjs/throttler, when multiple named throttlers are configured in ThrottlerModule,
+ * ThrottlerGuard.canActivate() iterates over ALL named throttlers by default.
+ * Subclasses extending NamedThrottlerGuard only execute handleRequest for their designated
+ * throttlerName, bypassing all other throttlers so general requests don't exhaust auth/otp quotas.
+ */
+export abstract class NamedThrottlerGuard extends ThrottlerGuard {
+  protected abstract readonly throttlerName: string;
+
+  protected override async handleRequest(
+    requestProps: ThrottlerRequest,
+  ): Promise<boolean> {
+    if (requestProps.throttler.name !== this.throttlerName) {
+      return true;
+    }
+    return super.handleRequest(requestProps);
+  }
 }
 
 // ─── Auth Rate Limit Guard (5 / IP / 10 min) ─────────────────────────────────
 
 @Injectable()
-export class AuthRateLimitGuard extends ThrottlerGuard {
+export class AuthRateLimitGuard extends NamedThrottlerGuard {
+  protected override readonly throttlerName = "auth";
+
   protected override async getTracker(
     req: Record<string, unknown>,
   ): Promise<string> {
@@ -67,7 +125,9 @@ export class AuthRateLimitGuard extends ThrottlerGuard {
 // ─── OTP Rate Limit Guard (3 / phone / 5 min) ────────────────────────────────
 
 @Injectable()
-export class OtpRateLimitGuard extends ThrottlerGuard {
+export class OtpRateLimitGuard extends NamedThrottlerGuard {
+  protected override readonly throttlerName = "otp";
+
   protected override async getTracker(
     req: Record<string, unknown>,
   ): Promise<string> {
@@ -92,7 +152,9 @@ export class OtpRateLimitGuard extends ThrottlerGuard {
 // ─── Search Rate Limit Guard (30 / userId / 1 min) ───────────────────────────
 
 @Injectable()
-export class SearchRateLimitGuard extends ThrottlerGuard {
+export class SearchRateLimitGuard extends NamedThrottlerGuard {
+  protected override readonly throttlerName = "search";
+
   protected override async getTracker(
     req: Record<string, unknown>,
   ): Promise<string> {
@@ -112,7 +174,9 @@ export class SearchRateLimitGuard extends ThrottlerGuard {
 // ─── General Rate Limit Guard (200 / userId / 1 min) ─────────────────────────
 
 @Injectable()
-export class GeneralRateLimitGuard extends ThrottlerGuard {
+export class GeneralRateLimitGuard extends NamedThrottlerGuard {
+  protected override readonly throttlerName = "general";
+
   protected override async getTracker(
     req: Record<string, unknown>,
   ): Promise<string> {

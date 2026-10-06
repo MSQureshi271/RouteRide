@@ -38,6 +38,7 @@ export const UserSummarySchema = z
     status: UserStatusSchema,
     email: z.string().nullable().optional(),
     profilePhotoUrl: z.string().nullable().optional(),
+    driverProfileId: z.string().uuid().nullable().optional(),
     createdAt: z.string().datetime(),
   })
   .strict();

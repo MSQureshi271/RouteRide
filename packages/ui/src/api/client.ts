@@ -169,3 +169,44 @@ export function getApiClient(): AxiosInstance {
   }
   return _apiClient;
 }
+
+/**
+ * Resolves pre-signed upload URLs for mobile environments.
+ *
+ * In local development, the backend pre-signs S3 URLs using AWS_ENDPOINT_URL
+ * (typically http://localhost:4566). When running on a physical mobile device or
+ * emulator, "localhost" points to the device itself.
+ *
+ * This function checks if the upload URL's hostname is localhost or 127.0.0.1.
+ * If so, and the API client was initialized with a remote host (e.g. 192.168.x.x
+ * or 10.0.2.2 via Expo Constants), it rewrites the hostname to match the API host,
+ * preserving the port, path, and signed query parameters.
+ *
+ * In production (real S3 / CloudFront), the hostname is not localhost, so the URL
+ * remains completely untouched.
+ */
+export function resolveUploadUrl(uploadUrl: string): string {
+  try {
+    const parsedUpload = new URL(uploadUrl);
+    if (
+      parsedUpload.hostname === "localhost" ||
+      parsedUpload.hostname === "127.0.0.1"
+    ) {
+      const apiBase = _apiClient?.defaults.baseURL;
+      if (apiBase) {
+        const parsedApi = new URL(apiBase);
+        if (
+          parsedApi.hostname &&
+          parsedApi.hostname !== "localhost" &&
+          parsedApi.hostname !== "127.0.0.1"
+        ) {
+          parsedUpload.hostname = parsedApi.hostname;
+          return parsedUpload.toString();
+        }
+      }
+    }
+  } catch {
+    // If URL parsing fails, return original
+  }
+  return uploadUrl;
+}

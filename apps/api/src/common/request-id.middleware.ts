@@ -9,7 +9,7 @@
  */
 import { Injectable, NestMiddleware } from "@nestjs/common";
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 
 // Extend FastifyRequest to carry requestId through the chain
 declare module "fastify" {
@@ -29,7 +29,7 @@ export class RequestIdMiddleware implements NestMiddleware {
       req.headers?.["x-request-id"] as string | undefined
     )?.trim();
     const requestId =
-      incomingId && incomingId.length > 0 ? incomingId : uuidv4();
+      incomingId && incomingId.length > 0 ? incomingId : randomUUID();
 
     // Attach to the raw node request so downstream code can read it
     (req as unknown as Record<string, unknown>)["requestId"] = requestId;

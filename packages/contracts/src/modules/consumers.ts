@@ -6,9 +6,7 @@ export const CreateRiderRequestSchema = z
   .object({
     name: z.string().min(2).max(100),
     homeAddressText: z.string().min(5).max(255),
-    homeLocation: GeoPointSchema,
     destAddressText: z.string().min(5).max(255),
-    destLocation: GeoPointSchema,
     notes: z.string().max(500).optional(),
   })
   .strict();

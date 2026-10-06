@@ -1,8 +1,7 @@
 /**
  * Consumer app shell — route-gated for authenticated CONSUMER users.
  *
- * Redirects unauthenticated users to the login screen.
- * The tab bar is a stub for now; feature tabs will be added in future tasks.
+ * Tabs: Home, Riders, Profile, Notifications
  *
  * Source: https://docs.expo.dev/router/layouts/tabs/
  */
@@ -36,6 +35,24 @@ export default function AppLayout() {
           title: "Home",
           tabBarIcon: ({ color }) => (
             <Text style={{ color, fontSize: 20 }}>🏠</Text>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="riders"
+        options={{
+          title: "Riders",
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>👧</Text>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>👤</Text>
           ),
         }}
       />

@@ -21,6 +21,7 @@ import {
   spacing,
   typography,
 } from "@routeride/ui";
+import { fetchAndNavigateToOnboardingStep } from "../../src/navigation/onboardingRouter";
 
 const RESEND_COOLDOWN = 60;
 
@@ -76,7 +77,11 @@ export default function DriverOtpScreen() {
       if (payload?.tokens && payload?.user) {
         await setTokens(payload.tokens, payload.user);
         setUser(payload.user);
-        router.replace("/(app)");
+        try {
+          await fetchAndNavigateToOnboardingStep();
+        } catch {
+          router.replace("/(app)" as never);
+        }
       } else {
         router.replace("/(auth)/login");
       }

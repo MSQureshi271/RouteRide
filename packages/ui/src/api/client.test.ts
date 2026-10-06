@@ -11,7 +11,12 @@
 import { type AxiosInstance } from "axios";
 import MockAdapter from "axios-mock-adapter";
 import * as SecureStore from "expo-secure-store";
-import { createApiClient, _resetClientStateForTesting } from "./client";
+import {
+  createApiClient,
+  initApiClient,
+  resolveUploadUrl,
+  _resetClientStateForTesting,
+} from "./client";
 import { useAuthStore } from "../store/auth";
 
 // ─── Mock expo-secure-store so tests run in Node ──────────────────────────────
@@ -167,5 +172,55 @@ describe("API client interceptors", () => {
 
     const req = mock.history.get[0];
     expect(req?.headers?.Authorization).toBe("Bearer my-token");
+  });
+});
+
+describe("resolveUploadUrl", () => {
+  it("rewrites localhost in uploadUrl to match remote API client host", () => {
+    initApiClient("http://192.168.1.100:3000/api/v1");
+
+    const resolved = resolveUploadUrl(
+      "http://localhost:4566/routeride-documents-local/drivers/uuid/cnic?X-Amz-Signature=abc",
+    );
+
+    expect(resolved).toBe(
+      "http://192.168.1.100:4566/routeride-documents-local/drivers/uuid/cnic?X-Amz-Signature=abc",
+    );
+  });
+
+  it("rewrites 127.0.0.1 in uploadUrl to match Android emulator host", () => {
+    initApiClient("http://10.0.2.2:3000/api/v1");
+
+    const resolved = resolveUploadUrl(
+      "http://127.0.0.1:4566/routeride-documents-local/drivers/uuid/cnic?key=val",
+    );
+
+    expect(resolved).toBe(
+      "http://10.0.2.2:4566/routeride-documents-local/drivers/uuid/cnic?key=val",
+    );
+  });
+
+  it("keeps localhost when API client is also on localhost", () => {
+    initApiClient("http://localhost:3000/api/v1");
+
+    const uploadUrl =
+      "http://localhost:4566/routeride-documents-local/drivers/uuid/cnic?X-Amz-Signature=abc";
+    const resolved = resolveUploadUrl(uploadUrl);
+
+    expect(resolved).toBe(uploadUrl);
+  });
+
+  it("leaves real AWS S3 production URLs untouched", () => {
+    initApiClient("http://192.168.1.100:3000/api/v1");
+
+    const s3Url =
+      "https://routeride-documents-prod.s3.ap-south-1.amazonaws.com/drivers/uuid/cnic?X-Amz-Signature=abc";
+    const resolved = resolveUploadUrl(s3Url);
+
+    expect(resolved).toBe(s3Url);
+  });
+
+  it("gracefully returns original string if URL parsing fails", () => {
+    expect(resolveUploadUrl("not-a-valid-url")).toBe("not-a-valid-url");
   });
 });

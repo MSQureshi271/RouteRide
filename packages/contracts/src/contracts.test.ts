@@ -1,6 +1,8 @@
 import {
   RegisterRequestSchema,
   OnboardDriverRequestSchema,
+  SetDriverRouteFromLocationsSchema,
+  RouteLocationSchema,
   SearchRoutesRequestSchema,
   GeoPointSchema,
   GeoLineStringSchema,
@@ -111,6 +113,74 @@ describe("Contracts Schema Validation (TRD §5 DTOs)", () => {
         currency: "PKR",
       };
       const result = OnboardDriverRequestSchema.safeParse(invalid);
+      expect(result.success).toBe(false);
+    });
+
+    it("accepts onboarding payload without routePolyline (field is now optional)", () => {
+      const payload = {
+        licenceNumber: "DL-123456",
+        vehicleMake: "Toyota",
+        vehicleModel: "HiAce",
+        vehicleYear: 2022,
+        vehicleColour: "White",
+        plateNumber: "ABC-124",
+        seatCapacity: 14,
+        operatingDays: [1, 2, 3, 4, 5],
+        basePriceCents: 1500000,
+        currency: "PKR",
+        // routePolyline deliberately omitted
+      };
+      const result = OnboardDriverRequestSchema.safeParse(payload);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("Location-Search Route Schemas", () => {
+    const validLocation = {
+      address: "DHA Phase 5, Karachi",
+      lat: 24.8198,
+      lng: 67.0824,
+    };
+
+    it("validates SetDriverRouteFromLocations with 2+ locations", () => {
+      const result = SetDriverRouteFromLocationsSchema.safeParse({
+        locations: [
+          validLocation,
+          { address: "I.I. Chundrigar Road", lat: 24.8607, lng: 67.0099 },
+        ],
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects SetDriverRouteFromLocations with fewer than 2 locations", () => {
+      const result = SetDriverRouteFromLocationsSchema.safeParse({
+        locations: [validLocation],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects SetDriverRouteFromLocations with more than 20 locations", () => {
+      const locations = Array.from({ length: 21 }, (_, i) => ({
+        ...validLocation,
+        address: `Stop ${i}`,
+      }));
+      const result = SetDriverRouteFromLocationsSchema.safeParse({ locations });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects RouteLocation with out-of-range latitude", () => {
+      const result = RouteLocationSchema.safeParse({
+        ...validLocation,
+        lat: 95,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects RouteLocation with out-of-range longitude", () => {
+      const result = RouteLocationSchema.safeParse({
+        ...validLocation,
+        lng: 200,
+      });
       expect(result.success).toBe(false);
     });
   });

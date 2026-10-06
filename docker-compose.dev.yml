@@ -51,6 +51,7 @@ services:
       AWS_DEFAULT_REGION: ap-south-1
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
+      EXTRA_CORS_ALLOWED_ORIGINS: "*"
       DEBUG: "0"
     volumes:
       - localstack_dev_data:/var/lib/localstack
@@ -66,8 +67,8 @@ services:
     image: mailhog/mailhog:v1.0.1
     restart: unless-stopped
     ports:
-      - "1025:1025"   # SMTP
-      - "8025:8025"   # Web UI
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8025"]
       interval: 10s

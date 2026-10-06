@@ -23,7 +23,7 @@ import {
 } from "@nestjs/terminus";
 import { getEnv } from "@routeride/config";
 import Redis from "ioredis";
-import { db } from "../prisma/db";
+import { PrismaService } from "../prisma/prisma.service.js";
 
 const TIMEOUT_MS = 2000;
 
@@ -43,7 +43,10 @@ function getRedisForHealth(): Redis {
 
 @Controller("health")
 export class HealthController {
-  constructor(private readonly health: HealthCheckService) {}
+  constructor(
+    private readonly health: HealthCheckService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Get()
   @HealthCheck()
@@ -53,7 +56,7 @@ export class HealthController {
       async () => {
         try {
           await Promise.race([
-            db.connect(),
+            this.prisma.query("SELECT 1"),
             new Promise<never>((_, reject) =>
               setTimeout(
                 () => reject(new Error("DB health check timed out")),
