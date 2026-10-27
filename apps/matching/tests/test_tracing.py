@@ -1,6 +1,9 @@
 """Unit tests for OpenTelemetry and Sentry tracing initializers."""
+
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from app.tracing import init_sentry, init_tracing
 
 
@@ -64,10 +67,18 @@ def test_init_tracing_configured_with_endpoint(monkeypatch: pytest.MonkeyPatch) 
         {
             "opentelemetry": mock_trace,
             "opentelemetry.trace": mock_trace,
-            "opentelemetry.sdk.trace": MagicMock(TracerProvider=MagicMock(return_value=mock_provider)),
-            "opentelemetry.sdk.trace.export": MagicMock(BatchSpanProcessor=MagicMock(return_value=mock_processor)),
-            "opentelemetry.exporter.otlp.proto.http.trace_exporter": MagicMock(OTLPSpanExporter=MagicMock(return_value=mock_exporter)),
-            "opentelemetry.sdk.resources": MagicMock(Resource=MagicMock(create=MagicMock(return_value="res"))),
+            "opentelemetry.sdk.trace": MagicMock(
+                TracerProvider=MagicMock(return_value=mock_provider)
+            ),
+            "opentelemetry.sdk.trace.export": MagicMock(
+                BatchSpanProcessor=MagicMock(return_value=mock_processor)
+            ),
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter": MagicMock(
+                OTLPSpanExporter=MagicMock(return_value=mock_exporter)
+            ),
+            "opentelemetry.sdk.resources": MagicMock(
+                Resource=MagicMock(create=MagicMock(return_value="res"))
+            ),
         },
     ):
         init_tracing(service_name="test-service")
@@ -86,4 +97,7 @@ def test_init_tracing_handles_exception(monkeypatch: pytest.MonkeyPatch) -> None
             },
         ):
             init_tracing()
-            assert any("Warning: Failed to initialize OpenTelemetry" in str(call) for call in mock_print.call_args_list)
+            assert any(
+                "Warning: Failed to initialize OpenTelemetry" in str(call)
+                for call in mock_print.call_args_list
+            )

@@ -1,5 +1,9 @@
 # Implementation Plan: RouteRide MVP (Gate D → Phase 1.5)
 
+> **Architecture amendment, 2026-10-21:** [ADR-011](../docs/decisions/ADR-011-service-area-discovery-and-driver-acceptance.md) and [Phase 1A amendment](PHASE1A-service-area-amendment.md) govern service-area discovery and driver acceptance. This direction is approved; implementation remains pending. Earlier corridor-only, overlap-only and subscription-only reconstruction statements in this baseline are superseded by that amendment.
+>
+> Module boundaries remain: `driver-onboarding` owns declared coverage/availability; `route-matching` owns read-only recommendation and insertion feasibility; `subscriptions` owns requests, atomic acceptance, recurring run assignments and derived slots; `mobile-shell` presents consumer choice and driver review; `notifications` delivers committed lifecycle events; `trips` instantiates accepted runs. Build order is amendment A1.01-A1.12, amended T1.12/T1.13, then Phase 1B. No change to billing cadence or live tracking authorization is implied.
+
 **Sources:** `RouteRide_PRD.docx` v1.0, `RouteRide_TRD.docx` v1.0
 **Governing process:** `.agents/skills/` — 24 skills. Every phase below names the skills that gate it.
 **Status:** Draft — pending human approval. `planning-and-task-breakdown` requires sign-off before any implementation starts.
@@ -15,7 +19,7 @@ vetted driver for a fixed daily schedule, and the platform guarantees that drive
 route- and time-conflict-free. The MVP targets **one city, consumer parents plus independent
 drivers only**, and validates exactly one loop:
 
-    discover a compatible driver → subscribe → track the ride → charge the parent, pay the driver
+    discover available drivers → send request → driver reviews and accepts → track the ride → charge the parent, pay the driver
 
 Everything else in the PRD — institutions, fleet operators, substitute drivers, SOS, AI routing,
 multi-city, corporate B2B — is out of MVP scope and appears here only as an *architectural

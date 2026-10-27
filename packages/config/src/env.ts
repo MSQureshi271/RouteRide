@@ -102,6 +102,26 @@ const EnvSchema = z.object({
     .string()
     .url("MATCHING_SERVICE_URL must be a valid URL"),
   MATCHING_SERVICE_TIMEOUT_MS: positiveInt.default("5000"),
+  MATCHING_CONFIG_VERSION: z.string().min(1).max(64).default("2"),
+  // Authoritative road evidence is independent of display-only duration caches.
+  MATCHING_ROAD_TIMES_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+  MATCHING_ROAD_MAX_AGE_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3600)
+    .default(300),
+  MATCHING_ROAD_TRAVEL_MULTIPLIER: z.coerce.number().min(1).max(3).default(1.2),
+  MATCHING_ROAD_STOP_SERVICE_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(600)
+    .default(60),
+  MATCHING_ROAD_TIMEOUT_SECONDS: z.coerce.number().min(0.1).max(30).default(5),
 
   // CORS
   CORS_ALLOWED_ORIGINS: corsOrigins,
@@ -117,22 +137,27 @@ const EnvSchema = z.object({
   // Platform parameters (docs/platform-parameters.md)
   LAUNCH_CITY_NAME: nonEmptyString,
   LAUNCH_CITY_TIMEZONE: nonEmptyString,
+  ROUTE_SERVICE_BBOX: z.string().optional(),
   LAUNCH_CITY_BBOX_MIN_LAT: z
     .string()
     .regex(/^-?\d+(\.\d+)?$/)
-    .transform(Number),
+    .transform(Number)
+    .optional(),
   LAUNCH_CITY_BBOX_MAX_LAT: z
     .string()
     .regex(/^-?\d+(\.\d+)?$/)
-    .transform(Number),
+    .transform(Number)
+    .optional(),
   LAUNCH_CITY_BBOX_MIN_LON: z
     .string()
     .regex(/^-?\d+(\.\d+)?$/)
-    .transform(Number),
+    .transform(Number)
+    .optional(),
   LAUNCH_CITY_BBOX_MAX_LON: z
     .string()
     .regex(/^-?\d+(\.\d+)?$/)
-    .transform(Number),
+    .transform(Number)
+    .optional(),
   DEFAULT_CURRENCY: z
     .string()
     .length(3, "DEFAULT_CURRENCY must be a 3-letter ISO 4217 code"),
@@ -170,7 +195,124 @@ const RefinedEnvSchema = EnvSchema.superRefine((data, ctx) => {
     });
   }
 
-  if (data.LAUNCH_CITY_BBOX_MAX_LAT <= data.LAUNCH_CITY_BBOX_MIN_LAT) {
+  // Canonical Bounding Box resolution and fail-fast check (AD-6)
+  let aliasBox:
+    | { minLon: number; minLat: number; maxLon: number; maxLat: number }
+    | undefined;
+  if (data.ROUTE_SERVICE_BBOX) {
+    const parts = data.ROUTE_SERVICE_BBOX.split(",").map((p) => p.trim());
+    if (parts.length !== 4) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["ROUTE_SERVICE_BBOX"],
+        message:
+          "ROUTE_SERVICE_BBOX must contain exactly 4 comma-separated numbers (minLon,minLat,maxLon,maxLat)",
+      });
+    } else {
+      const [minLonStr, minLatStr, maxLonStr, maxLatStr] = parts as [
+        string,
+        string,
+        string,
+        string,
+      ];
+      const minLon = Number(minLonStr);
+      const minLat = Number(minLatStr);
+      const maxLon = Number(maxLonStr);
+      const maxLat = Number(maxLatStr);
+      if (isNaN(minLon) || isNaN(minLat) || isNaN(maxLon) || isNaN(maxLat)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["ROUTE_SERVICE_BBOX"],
+          message: "ROUTE_SERVICE_BBOX coordinates must be valid numbers",
+        });
+      } else {
+        aliasBox = { minLon, minLat, maxLon, maxLat };
+      }
+    }
+  }
+
+  const hasAnyInd =
+    data.LAUNCH_CITY_BBOX_MIN_LAT !== undefined ||
+    data.LAUNCH_CITY_BBOX_MAX_LAT !== undefined ||
+    data.LAUNCH_CITY_BBOX_MIN_LON !== undefined ||
+    data.LAUNCH_CITY_BBOX_MAX_LON !== undefined;
+
+  let indBox:
+    | { minLon: number; minLat: number; maxLon: number; maxLat: number }
+    | undefined;
+  if (hasAnyInd) {
+    if (
+      data.LAUNCH_CITY_BBOX_MIN_LAT === undefined ||
+      data.LAUNCH_CITY_BBOX_MAX_LAT === undefined ||
+      data.LAUNCH_CITY_BBOX_MIN_LON === undefined ||
+      data.LAUNCH_CITY_BBOX_MAX_LON === undefined
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["LAUNCH_CITY_BBOX_MIN_LAT"],
+        message:
+          "All four LAUNCH_CITY_BBOX_* variables (MIN_LAT, MAX_LAT, MIN_LON, MAX_LON) must be set together",
+      });
+    } else {
+      indBox = {
+        minLon: data.LAUNCH_CITY_BBOX_MIN_LON,
+        minLat: data.LAUNCH_CITY_BBOX_MIN_LAT,
+        maxLon: data.LAUNCH_CITY_BBOX_MAX_LON,
+        maxLat: data.LAUNCH_CITY_BBOX_MAX_LAT,
+      };
+    }
+  }
+
+  if (aliasBox && indBox) {
+    const tolerance = 0.0001;
+    if (
+      Math.abs(aliasBox.minLon - indBox.minLon) > tolerance ||
+      Math.abs(aliasBox.minLat - indBox.minLat) > tolerance ||
+      Math.abs(aliasBox.maxLon - indBox.maxLon) > tolerance ||
+      Math.abs(aliasBox.maxLat - indBox.maxLat) > tolerance
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["ROUTE_SERVICE_BBOX"],
+        message:
+          "Startup fail-fast: ROUTE_SERVICE_BBOX and LAUNCH_CITY_BBOX_* describe different bounding boxes (> 0.0001 deg difference)",
+      });
+    }
+  }
+
+  const resolved = aliasBox ??
+    indBox ?? {
+      minLon: 66.85,
+      minLat: 24.7,
+      maxLon: 67.35,
+      maxLat: 25.15,
+    };
+
+  if (
+    resolved.minLat < -90 ||
+    resolved.minLat > 90 ||
+    resolved.maxLat < -90 ||
+    resolved.maxLat > 90
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["LAUNCH_CITY_BBOX_MIN_LAT"],
+      message: "Latitude must be between -90 and 90",
+    });
+  }
+  if (
+    resolved.minLon < -180 ||
+    resolved.minLon > 180 ||
+    resolved.maxLon < -180 ||
+    resolved.maxLon > 180
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["LAUNCH_CITY_BBOX_MIN_LON"],
+      message: "Longitude must be between -180 and 180",
+    });
+  }
+  if (resolved.minLat >= resolved.maxLat) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["LAUNCH_CITY_BBOX_MAX_LAT"],
@@ -178,8 +320,7 @@ const RefinedEnvSchema = EnvSchema.superRefine((data, ctx) => {
         "LAUNCH_CITY_BBOX_MAX_LAT must be greater than LAUNCH_CITY_BBOX_MIN_LAT",
     });
   }
-
-  if (data.LAUNCH_CITY_BBOX_MAX_LON <= data.LAUNCH_CITY_BBOX_MIN_LON) {
+  if (resolved.minLon >= resolved.maxLon) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["LAUNCH_CITY_BBOX_MAX_LON"],
@@ -187,7 +328,26 @@ const RefinedEnvSchema = EnvSchema.superRefine((data, ctx) => {
         "LAUNCH_CITY_BBOX_MAX_LON must be greater than LAUNCH_CITY_BBOX_MIN_LON",
     });
   }
-});
+
+  // Populate resolved values so downstreams have non-undefined fields
+  (data as Record<string, unknown>)["LAUNCH_CITY_BBOX_MIN_LON"] =
+    resolved.minLon;
+  (data as Record<string, unknown>)["LAUNCH_CITY_BBOX_MIN_LAT"] =
+    resolved.minLat;
+  (data as Record<string, unknown>)["LAUNCH_CITY_BBOX_MAX_LON"] =
+    resolved.maxLon;
+  (data as Record<string, unknown>)["LAUNCH_CITY_BBOX_MAX_LAT"] =
+    resolved.maxLat;
+  (data as Record<string, unknown>)["ROUTE_SERVICE_BBOX"] =
+    `${resolved.minLon},${resolved.minLat},${resolved.maxLon},${resolved.maxLat}`;
+}).transform((data) => ({
+  ...data,
+  LAUNCH_CITY_BBOX_MIN_LON: data.LAUNCH_CITY_BBOX_MIN_LON as number,
+  LAUNCH_CITY_BBOX_MIN_LAT: data.LAUNCH_CITY_BBOX_MIN_LAT as number,
+  LAUNCH_CITY_BBOX_MAX_LON: data.LAUNCH_CITY_BBOX_MAX_LON as number,
+  LAUNCH_CITY_BBOX_MAX_LAT: data.LAUNCH_CITY_BBOX_MAX_LAT as number,
+  ROUTE_SERVICE_BBOX: data.ROUTE_SERVICE_BBOX as string,
+}));
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

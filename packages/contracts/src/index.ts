@@ -11,3 +11,5 @@ export * from "./modules/trips.js";
 export * from "./modules/payments.js";
 export * from "./modules/notifications.js";
 export * from "./modules/websocket.js";
+export * from "./modules/service-area.js";
+export * from "./modules/driver-public-profile.js";

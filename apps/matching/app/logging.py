@@ -6,9 +6,12 @@ Rules:
  - Coordinate rounding (2 decimal places for lat/lng)
  - Redaction for sensitive keys
 """
+
 import logging as stdlib_logging
 import os
-from typing import Any, MutableMapping
+from collections.abc import MutableMapping
+from typing import Any
+
 import structlog
 
 COORD_KEYS = {"lat", "lng", "latitude", "longitude"}

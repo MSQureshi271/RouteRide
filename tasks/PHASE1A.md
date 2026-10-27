@@ -1,5 +1,16 @@
 # Phase 1A — Route Matching and Discovery (Final Revision)
 
+> **Implementation progress:** [Amendment report](PHASE1A-amendment-progress.md) records code changes and local verification. Use it alongside the amendment; historical checked tasks below are not evidence for the revised behavior.
+
+> **Current authority (2026-10-21):** [Service-area amendment](PHASE1A-service-area-amendment.md) and [ADR-011](../docs/decisions/ADR-011-service-area-discovery-and-driver-acceptance.md).
+> The amendment is the active plan and must be completed before continuing T1.12. It defines discovery, ranking, requestability, run feasibility, migration, and replacement checkpoints.
+>
+> **Historical baseline below:** All architecture decisions, formulas, task criteria, dependency diagrams, estimates, and “final implementation gate” statements below describe the previous corridor model. They are retained to preserve implementation history, including existing checked tasks; they are not current acceptance criteria. In particular, mandatory route geometry, hard corridor/direction filters, blanket overlapping-window rejection, and Haversine-only acceptance are superseded. Use the amendment's explicit retained rules and task mapping.
+>
+> **Task IDs:** The old Phase 1A T1.14 is superseded by A1.06/A1.10 and Phase 1B T1.16. T1.14 in the current master task list means pending request creation only.
+
+## Historical corridor baseline (superseded)
+
 > **Estimated duration:** 4–6 weeks (single developer), 3–4 weeks (two developers in parallel)
 >
 > Highest-risk phase in the MVP. It is first for that reason. If the P99 budget cannot be met on
@@ -452,7 +463,7 @@ To prevent leaking internal filtering mechanics to consumers while providing ric
 
 ### Foundation
 
-- [ ] **T1.01 — Matching service scaffold, contracts & migrations** · `M` · deps: T0.09, T-D.03
+- [x] **T1.01 — Matching service scaffold, contracts & migrations** · `M` · deps: T0.09, T-D.03
   - **Do:**
     1. Scaffold FastAPI app with structlog, OTel tracing, config validation, and PostGIS test fixtures.
     2. Add database migration for `driver_matching_stats` table.
@@ -467,14 +478,14 @@ To prevent leaking internal filtering mechanics to consumers while providing ric
 
 ### Spatial & Core Eligibility
 
-- [ ] **T1.02 — Spatial candidate filter with defensive geometry precedence** · `M` · deps: T1.01, T0.13
+- [x] **T1.02 — Spatial candidate filter with defensive geometry precedence** · `M` · deps: T1.01, T0.13
   - **Do:** Implement spatial candidate query filtering on `driver_profiles`. Enforce E1 (status = APPROVED), E2 (defensive geometry precedence: NULL -> EMPTY -> WRONG_SRID -> NON_SIMPLE -> INVALID), E3 (ST_DWithin for pickup <= 1500m AND dest <= 2000m on geography), and E5 (operating_days array overlap). Separate reviews and subscriptions into distinct subqueries/lateral joins to eliminate the 3×4 cartesian product bug. Return `pickupDistance` and `destDistance` directly from `ST_Distance` (geography).
   - **Accept:** Returns correct review averages and subscriber counts; invalid geometries are excluded without failing the search; GIST index `idx_dp_route` is verified in EXPLAIN query plans.
   - **Verify:** Regression test seeding 3×4 case asserting true values; EXPLAIN ANALYZE confirms index scan; defensive tests for NULL, empty, non-simple geometry.
   - **Files:** `apps/matching/app/matching/candidates.py`, `apps/matching/tests/test_candidates.py`.
   - **Skills:** doubt-driven-development, test-driven-development, performance-optimization
 
-- [ ] **T1.03 — Direction check with corridor model & dual-leg ROUND_TRIP** · `M` · deps: T1.02
+- [x] **T1.03 — Direction check with corridor model & dual-leg ROUND_TRIP** · `M` · deps: T1.02
   - **Do:** Project pickup and destination onto route polyline using `ST_LineLocatePoint` (the only projection function used). Implement corridor traversal semantics (AD-9):
     - MORNING: `pos_pickup < pos_dest`.
     - AFTERNOON: `pos_pickup > pos_dest`.
@@ -485,14 +496,14 @@ To prevent leaking internal filtering mechanics to consumers while providing ric
   - **Files:** `apps/matching/app/matching/direction.py`, `apps/matching/tests/test_direction.py`.
   - **Skills:** doubt-driven-development, test-driven-development
 
-- [ ] **T1.04 — Capacity check with distinct subscription accounting** · `M` · deps: T1.03
+- [x] **T1.04 — Capacity check with distinct subscription accounting** · `M` · deps: T1.03
   - **Do:** Implement E6 capacity check: count distinct active subscriptions overlapping the requested day and requested leg window(s) via the schedule slots join per AD-10. Exclude candidate if `COUNT(DISTINCT s.id) + 1 > seat_capacity`. ROUND_TRIP subscriptions consume exactly 1 seat. PENDING subscriptions do not consume seats; PAUSED/CANCELLED free their seats.
   - **Accept:** Drivers full on Monday match on Tuesday if free; ROUND_TRIP counts as 1 seat; distinct counting prevents double-counting multi-slot subscriptions.
   - **Verify:** Tests at capacity on given day, one below capacity, full on day X but free on day Y, pending requests against last seat.
   - **Files:** `apps/matching/app/matching/capacity.py`, `apps/matching/tests/test_capacity.py`.
   - **Skills:** test-driven-development
 
-- [ ] **T1.05 — Timing conflict check & deterministic haversine eligibility** · `M` · deps: T1.04, T-D.05
+- [x] **T1.05 — Timing conflict check & deterministic haversine eligibility** · `M` · deps: T1.04, T-D.05
   - **Do:** Build requested service windows using **deterministic Haversine duration** (never synchronous external APIs). For ROUND_TRIP, build separate morning and afternoon windows. Validate that morning and afternoon windows do not overlap (`morning_end + gap <= afternoon_start`), rejecting invalid intervals with `400 INVALID_ROUND_TRIP_TIMES`. Reject cross-midnight windows with `400 INVALID_SERVICE_INTERVAL`. Check against `driver_schedule_slots` using the interval overlap formula with `MATCHING_SLOT_GAP_MINUTES=0` (touching windows permitted).
   - **Accept:** Hard eligibility is 100% deterministic via Haversine; touching windows allowed; cross-midnight rejected; ROUND_TRIP dual windows evaluated.
   - **Verify:** Tests for touching boundaries (valid with 0 gap), overlapping intervals, cross-midnight rejection, and ROUND_TRIP dual-window evaluation.
@@ -501,7 +512,7 @@ To prevent leaking internal filtering mechanics to consumers while providing ric
 
 ### Scoring & System Integration
 
-- [ ] **T1.06 — Scoring & ranking with day-level stats & Bayesian shrinkage** · `M` · deps: T1.05, T-D.06, T1.01 (schema contract)
+- [x] **T1.06 — Scoring & ranking with day-level stats & Bayesian shrinkage** · `M` · deps: T1.05, T-D.06, T1.01 (schema contract)
   - **Do:** Implement 5-component scoring:
     1. Independent proximity normalization: `0.5 * (clamp(1 - p/1500) + clamp(1 - d/2000))`.
     2. Timing score: uses `driver_matching_stats.typical_departure_time` for the requested day; falls back to neutral 0.500 if observations < 3.
@@ -515,61 +526,63 @@ To prevent leaking internal filtering mechanics to consumers while providing ric
   - **Files:** `apps/matching/app/matching/scoring.py`, `apps/matching/tests/test_scoring.py`.
   - **Skills:** doubt-driven-development, test-driven-development
 
-- [ ] **T1.07 — Edge-case and property test suite** · `M` · deps: T1.06
+- [x] **T1.07 — Edge-case and property test suite** · `M` · deps: T1.06
   - **Do:** Test adversarial cases: boundary distances (0m, 1500m, 2000m), minimum 50m separation rejection (`422 INVALID_ROUTE_REQUEST`), cross-midnight interval rejection (`400 INVALID_SERVICE_INTERVAL`), overlapping ROUND_TRIP leg rejection (`400 INVALID_ROUND_TRIP_TIMES`), defensive geometry precedence, new driver neutral priors, single-seat capacity.
   - **Accept:** 100% of edge tests pass; no unhandled exceptions; line coverage >= 90%.
   - **Verify:** `pytest --cov=app` meets thresholds; DST transitions evaluated against `Asia/Karachi` timezone.
   - **Files:** `apps/matching/tests/test_edge_cases.py`, `apps/matching/tests/test_properties.py`.
   - **Skills:** test-driven-development, doubt-driven-development
 
-- [ ] **T1.08 — `GET /drivers/search` gateway endpoint** · `M` · deps: T1.07, T0.29
+- [x] **T1.08 — `GET /drivers/search` gateway endpoint** · `M` · deps: T1.07, T0.29
   - **Do:** Implement NestJS gateway endpoint: resolve coordinates with query > rider profile fallback; validate bounding box; proxy to Python matching with 3s read timeout; map internal firstFailureCounts to public contracted `noMatchReasons` (dominant first-failure stage); cache results in Redis (2 min TTL) excluding `riderId` from key; enforce rate limit (30 req/min/user).
   - **Accept:** Missing coordinates return 400; outside bounding box returns 422; 3s timeout returns 503; cache hit < 10ms; safe contracted `noMatchReasons` returned.
   - **Verify:** Integration tests per error code; coordinates outside bounding box return 422; cache hit verifies response; 503 path tested with matching service stopped.
   - **Files:** `apps/api/src/search/search.controller.ts`, `apps/api/src/search/matching.client.ts`, `packages/contracts/src/modules/search.ts`, `apps/api/test/search.integration.test.ts`.
   - **Skills:** api-and-interface-design, security-and-hardening, test-driven-development
 
-- [ ] **T1.09 — Performance harness & baseline** · `M` · deps: T1.08
+- [x] **T1.09 — Performance harness & baseline** · `M` · deps: T1.08
   - **Do:** Benchmark 500 approved drivers and 2,000 subscriptions. Measure Python matching service processing time (P50 < 120ms, P99 < 400ms benchmark targets). 5s gateway timeout documented as hard failure ceiling.
   - **Accept:** P50 < 120ms and P99 < 400ms recorded in `PERF.md`; harness runs with fixed resource limits (2 CPU, 4GB RAM).
   - **Verify:** Harness runs locally and produces structured report; trend recorded in `PERF.md`.
   - **Files:** `apps/matching/tests/perf/test_search_latency.py`, `apps/matching/tests/perf/seed_500.py`, `PERF.md`.
   - **Skills:** performance-optimization, observability-and-instrumentation
 
-- [ ] **T1.10 — Daily precompute job for driver stats & day-level departure times** · `S` · deps: T0.12, T1.01
+- [x] **T1.10 — Daily precompute job for driver stats & day-level departure times** · `S` · deps: T0.12, T1.01
   - **Do:** BullMQ worker job computing:
     1. Driver-level acceptance stats (acceptedRequestCount, eligibleRequestCount, acceptanceRate over 90-day window) -> `driver_profiles`.
     2. Day-level median departure times for each operating day (only if >= 3 active subscriptions) -> `driver_matching_stats`.
   - **Accept:** Idempotent re-run; failures leave previous values intact; drivers with no requests get 0 counts and null acceptance rate; departure times correctly stored per operating day.
   - **Verify:** Tests for no-history case, idempotent re-run, day-specific departure median calculation.
-  - **Files:** `apps/worker/src/driver-stats.job.ts`, `apps/worker/test/driver-stats.test.ts`.
+  - **Files:** `apps/worker/src/driver-stats/driver-stats.job.ts`, `apps/worker/src/driver-stats/driver-stats.worker.ts`, `apps/worker/test/driver-stats.test.ts`.
   - **Skills:** test-driven-development, observability-and-instrumentation
 
-- [ ] **T1.10b — Structured matching decision metrics** · `S` · deps: T1.06
+- [x] **T1.10b — Structured matching decision metrics** · `S` · deps: T1.06
   - **Do:** Emit OpenTelemetry metrics and structured logs mapping to canonical E1–E7 first-failure steps for every search request.
   - **Accept:** Every search produces exactly one structured log event; metrics map to AD-11 steps; no PII emitted.
   - **Files:** `apps/matching/app/matching/observability.py`, `apps/matching/tests/test_observability.py`.
   - **Skills:** observability-and-instrumentation
 
-- [ ] **T1.10c — Daily duration cache warm-up job (Optional / Non-blocking)** · `S` · deps: T1.05
+- [x] **T1.10c — Daily duration cache warm-up job (Optional / Non-blocking)** · `S` · deps: T1.05
   - **Do:** BullMQ worker job running off-peak (03:00 PKT) pre-computing Maps durations into Redis. Optional display optimization; matching service functions fully without it.
   - **Accept:** Populates Redis without stalling traffic; handles Google Maps API errors or missing keys gracefully.
-  - **Files:** `apps/worker/src/duration-cache.job.ts`, `apps/worker/test/duration-cache.test.ts`.
+  - **Files:** `apps/worker/src/duration-cache/duration-cache.job.ts`, `apps/worker/src/duration-cache/duration-cache.worker.ts`, `apps/worker/test/duration-cache.test.ts`, `apps/matching/app/maps/duration.py`.
   - **Skills:** test-driven-development, performance-optimization
 
-- [ ] **T1.11 — Mobile search input screen** · `M` · deps: T1.08, T0.44
+- [x] **T1.11 — Mobile search input screen** · `M` · deps: T1.08, T0.44
   - **Do:** Rider selector, home/dest prefilled from rider profile, day picker, time picker, and conditional afternoon time picker for ROUND_TRIP. Shared Zod validation.
   - **Accept:** Defaults come from selected rider; selecting ROUND_TRIP shows afternoon time picker; validation blocks invalid inputs client-side.
   - **Files:** `apps/mobile-consumer/app/(app)/search/index.tsx`, `apps/mobile-consumer/__tests__/search-input.test.tsx`.
   - **Skills:** frontend-ui-engineering, test-driven-development
 
 - [ ] **T1.12 — Mobile search results & driver card** · `M` · deps: T1.11
+  - **Implementation:** [Amended T1.12 progress and remaining device checks](T1.12-progress.md).
   - **Do:** Ranked driver cards with name, vehicle, rating, seats, price. Empty state uses contracted `noMatchReasons` (dominant first-failure stage) to guide consumer.
   - **Accept:** Actionable empty state guidance based on dominant reason; price formatted from cents; rating displays "New driver" if null.
   - **Files:** `apps/mobile-consumer/app/(app)/search/results.tsx`, `packages/ui/src/components/DriverCard.tsx`.
   - **Skills:** frontend-ui-engineering, test-driven-development
 
 - [ ] **T1.13 — Mobile driver public profile screen** · `S` · deps: T1.12
+  - **Implementation:** [Amended T1.13/T1.14 implementation and verification](T1.13-T1.14-progress.md); native device verification remains pending.
   - **Do:** Driver details using contracted `DriverPublicProfile` DTO (no internal metrics exposed).
   - **Accept:** Returns exact contracted DTO; no internal metrics (acceptance rate, raw IDs) exposed.
   - **Files:** `apps/mobile-consumer/app/(app)/drivers/[id].tsx`, `apps/api/src/drivers/public-profile.controller.ts`.
@@ -643,7 +656,7 @@ graph TD
 - [ ] T1.14 atomic revalidation proves search results are advisory, not reservations.
 - [ ] T1.14 serialization retry is tested (AD-12).
 - [ ] Cross-language eligibility test vectors (`packages/contracts/test-vectors/eligibility.json`) pass in both Python and NestJS (AD-11).
-- [ ] Capacity is day+leg-aware distinct subscription accounting (AD-10).
+- [x] Capacity is day+leg-aware distinct subscription accounting (AD-10).
 - [ ] Proximity uses independent normalization — boundary tests match the "Boundary Test Matrix".
 - [ ] Search cache key excludes `riderId` and includes `matchingConfigVersion`.
 

@@ -1,0 +1,266 @@
+{
+  "version": "1.0.0",
+  "description": "Cross-language canonical eligibility test vectors (AD-11) for RouteRide matching engine",
+  "vectors": [
+    {
+      "id": "VEC-E1-01",
+      "description": "Candidate driver is in PENDING verification status",
+      "stage": "E1",
+      "expectedEligible": false,
+      "expectedExclusionCode": "DRIVER_STATUS",
+      "driver": {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "status": "PENDING",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "activeSubscriptions": 0,
+        "hasRoute": true,
+        "isSimpleRoute": true
+      },
+      "request": {
+        "day": 1,
+        "departureTime": "07:30",
+        "subscriptionType": "ONE_WAY"
+      }
+    },
+    {
+      "id": "VEC-E1-02",
+      "description": "Candidate driver is in SUSPENDED status",
+      "stage": "E1",
+      "expectedEligible": false,
+      "expectedExclusionCode": "DRIVER_STATUS",
+      "driver": {
+        "id": "11111111-1111-4111-8111-111111111112",
+        "status": "SUSPENDED",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "activeSubscriptions": 0,
+        "hasRoute": true,
+        "isSimpleRoute": true
+      },
+      "request": {
+        "day": 1,
+        "departureTime": "07:30",
+        "subscriptionType": "ONE_WAY"
+      }
+    },
+    {
+      "id": "VEC-E2-01",
+      "description": "Approved driver has NULL route polyline geometry",
+      "stage": "E2",
+      "expectedEligible": false,
+      "expectedExclusionCode": "INVALID_GEOMETRY",
+      "driver": {
+        "id": "22222222-2222-4222-8222-222222222221",
+        "status": "APPROVED",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "activeSubscriptions": 0,
+        "hasRoute": false,
+        "isSimpleRoute": false
+      },
+      "request": {
+        "day": 1,
+        "departureTime": "07:30",
+        "subscriptionType": "ONE_WAY"
+      }
+    },
+    {
+      "id": "VEC-E2-02",
+      "description": "Approved driver has self-intersecting (non-simple) route polyline",
+      "stage": "E2",
+      "expectedEligible": false,
+      "expectedExclusionCode": "INVALID_GEOMETRY",
+      "driver": {
+        "id": "22222222-2222-4222-8222-222222222222",
+        "status": "APPROVED",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "activeSubscriptions": 0,
+        "hasRoute": true,
+        "isSimpleRoute": false
+      },
+      "request": {
+        "day": 1,
+        "departureTime": "07:30",
+        "subscriptionType": "ONE_WAY"
+      }
+    },
+    {
+      "id": "VEC-E3-01",
+      "description": "Pickup point is beyond R_pickup distance (e.g. 2500m > 1500m)",
+      "stage": "E3",
+      "expectedEligible": false,
+      "expectedExclusionCode": "DISTANCE",
+      "driver": {
+        "id": "33333333-3333-4333-8333-333333333331",
+        "status": "APPROVED",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "activeSubscriptions": 0,
+        "pickupDistanceM": 2500.0,
+        "destDistanceM": 500.0
+      },
+      "request": {
+        "day": 1,
+        "departureTime": "07:30",
+        "subscriptionType": "ONE_WAY"
+      }
+    },
+    {
+      "id": "VEC-E3-02",
+      "description": "Destination point is beyond R_dest distance (e.g. 3000m > 2000m)",
+      "stage": "E3",
+      "expectedEligible": false,
+      "expectedExclusionCode": "DISTANCE",
+      "driver": {
+        "id": "33333333-3333-4333-8333-333333333332",
+        "status": "APPROVED",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "activeSubscriptions": 0,
+        "pickupDistanceM": 400.0,
+        "destDistanceM": 3200.0
+      },
+      "request": {
+        "day": 1,
+        "departureTime": "07:30",
+        "subscriptionType": "ONE_WAY"
+      }
+    },
+    {
+      "id": "VEC-E4-01",
+      "description": "Outbound direction check fails (pos_pickup >= pos_dest along corridor)",
+      "stage": "E4",
+      "expectedEligible": false,
+      "expectedExclusionCode": "DIRECTION",
+      "driver": {
+        "id": "44444444-4444-4444-8444-444444444441",
+        "status": "APPROVED",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "posPickup": 0.8,
+        "posDest": 0.2
+      },
+      "request": {
+        "day": 1,
+        "departureTime": "07:30",
+        "subscriptionType": "ONE_WAY"
+      }
+    },
+    {
+      "id": "VEC-E5-01",
+      "description": "Driver does not operate on the requested day (e.g. Sunday=0 vs driver operates 1..5)",
+      "stage": "E5",
+      "expectedEligible": false,
+      "expectedExclusionCode": "OPERATING_DAY",
+      "driver": {
+        "id": "55555555-5555-4555-8555-555555555551",
+        "status": "APPROVED",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "posPickup": 0.2,
+        "posDest": 0.8
+      },
+      "request": {
+        "day": 0,
+        "departureTime": "07:30",
+        "subscriptionType": "ONE_WAY"
+      }
+    },
+    {
+      "id": "VEC-E6-01",
+      "description": "Driver has zero remaining seats on requested day (capacity=4, active=4)",
+      "stage": "E6",
+      "expectedEligible": false,
+      "expectedExclusionCode": "CAPACITY",
+      "driver": {
+        "id": "66666666-6666-4666-8666-666666666661",
+        "status": "APPROVED",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "overlappingActiveSubscriptions": 4,
+        "posPickup": 0.2,
+        "posDest": 0.8
+      },
+      "request": {
+        "day": 1,
+        "departureTime": "07:30",
+        "subscriptionType": "ONE_WAY"
+      }
+    },
+    {
+      "id": "VEC-E7-01",
+      "description": "Driver has conflicting schedule slot on requested day and leg window",
+      "stage": "E7",
+      "expectedEligible": false,
+      "expectedExclusionCode": "TIMING",
+      "driver": {
+        "id": "77777777-7777-4777-8777-777777777771",
+        "status": "APPROVED",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "overlappingActiveSubscriptions": 2,
+        "scheduleSlots": [
+          { "slotStart": "07:15", "slotEnd": "07:45", "days": [1, 2, 3, 4, 5] }
+        ]
+      },
+      "request": {
+        "day": 1,
+        "departureTime": "07:30",
+        "subscriptionType": "ONE_WAY"
+      }
+    },
+    {
+      "id": "VEC-ELIGIBLE-01",
+      "description": "Driver passes all E1-E7 criteria for one-way commute",
+      "stage": "ELIGIBLE",
+      "expectedEligible": true,
+      "expectedExclusionCode": null,
+      "driver": {
+        "id": "88888888-8888-4888-8888-888888888881",
+        "status": "APPROVED",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "overlappingActiveSubscriptions": 2,
+        "pickupDistanceM": 450.0,
+        "destDistanceM": 600.0,
+        "posPickup": 0.25,
+        "posDest": 0.75,
+        "scheduleSlots": [
+          { "slotStart": "08:15", "slotEnd": "08:45", "days": [1, 2, 3, 4, 5] }
+        ]
+      },
+      "request": {
+        "day": 1,
+        "departureTime": "07:30",
+        "subscriptionType": "ONE_WAY"
+      }
+    },
+    {
+      "id": "VEC-ELIGIBLE-02",
+      "description": "Driver passes all E1-E7 criteria for ROUND_TRIP commute on undirected corridor",
+      "stage": "ELIGIBLE",
+      "expectedEligible": true,
+      "expectedExclusionCode": null,
+      "driver": {
+        "id": "88888888-8888-4888-8888-888888888882",
+        "status": "APPROVED",
+        "operatingDays": [1, 2, 3, 4, 5],
+        "seatCapacity": 4,
+        "overlappingActiveSubscriptions": 1,
+        "pickupDistanceM": 300.0,
+        "destDistanceM": 400.0,
+        "posPickup": 0.2,
+        "posDest": 0.8,
+        "scheduleSlots": []
+      },
+      "request": {
+        "day": 2,
+        "departureTime": "07:30",
+        "pickupTime": "14:30",
+        "subscriptionType": "ROUND_TRIP"
+      }
+    }
+  ]
+}

@@ -29,11 +29,16 @@ import {
   SearchRoutesResponseSchema,
 } from "./modules/search.js";
 import {
-  RequestSubscriptionRequestSchema,
   SubscriptionResponseSchema,
   SubscriptionListResponseSchema,
   CancelSubscriptionRequestSchema,
 } from "./modules/subscriptions.js";
+import {
+  RequestSubscriptionV2Schema,
+  PendingSubscriptionResponseSchema,
+} from "./modules/service-area.js";
+import { DriverPublicProfileSchema } from "./modules/driver-public-profile.js";
+import { createSuccessEnvelopeSchema } from "./common/envelope.js";
 import {
   TripResponseSchema,
   TripListResponseSchema,
@@ -260,6 +265,73 @@ export function generateOpenApiDocument(): ReturnType<typeof createDocument> {
           },
         },
       },
+      "/drivers/{id}/public-profile": {
+        get: {
+          summary: "View a requestable driver for an owned rider's commute",
+          parameters: [
+            {
+              name: "id",
+              in: "path",
+              required: true,
+              schema: { type: "string", format: "uuid" },
+            },
+            {
+              name: "riderId",
+              in: "query",
+              required: true,
+              schema: { type: "string", format: "uuid" },
+            },
+            {
+              name: "day",
+              in: "query",
+              required: true,
+              schema: { type: "integer", minimum: 0, maximum: 6 },
+            },
+            {
+              name: "departureTime",
+              in: "query",
+              required: true,
+              schema: { type: "string", example: "08:30" },
+            },
+            {
+              name: "subscriptionType",
+              in: "query",
+              required: true,
+              schema: {
+                type: "string",
+                enum: ["ONE_WAY", "ROUND_TRIP"],
+              },
+            },
+            {
+              name: "pickupTime",
+              in: "query",
+              schema: {
+                type: "string",
+                description: "Required for ROUND_TRIP; later than departureTime",
+              },
+            },
+            {
+              name: "reviewsPage",
+              in: "query",
+              schema: { type: "integer", minimum: 1 },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Public profile without private roster geometry",
+              content: {
+                "application/json": {
+                  schema: createSuccessEnvelopeSchema(
+                    DriverPublicProfileSchema,
+                  ),
+                },
+              },
+            },
+            "403": { description: "Rider belongs to another consumer" },
+            "422": { description: "Driver is no longer requestable" },
+          },
+        },
+      },
       "/subscriptions": {
         get: {
           summary: "List subscriptions",
@@ -273,17 +345,28 @@ export function generateOpenApiDocument(): ReturnType<typeof createDocument> {
           },
         },
         post: {
-          summary: "Request a recurring ride subscription",
+          summary:
+            "Create a pending recurring ride request without reserving seats or billing",
+          parameters: [
+            {
+              name: "Idempotency-Key",
+              in: "header",
+              required: true,
+              schema: { type: "string" },
+            },
+          ],
           requestBody: {
             content: {
-              "application/json": { schema: RequestSubscriptionRequestSchema },
+              "application/json": { schema: RequestSubscriptionV2Schema },
             },
           },
           responses: {
             "201": {
               description: "Requested",
               content: {
-                "application/json": { schema: SubscriptionResponseSchema },
+                "application/json": {
+                  schema: PendingSubscriptionResponseSchema,
+                },
               },
             },
           },

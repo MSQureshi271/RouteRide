@@ -80,6 +80,26 @@ describe("loadEnv()", () => {
     _resetEnvForTesting();
   });
 
+  it("keeps authoritative road estimates disabled unless explicitly enabled", () => {
+    withEnv({ MATCHING_ROAD_TIMES_ENABLED: undefined }, () => {
+      expect(loadEnv().MATCHING_ROAD_TIMES_ENABLED).toBe(false);
+      expect(loadEnv().MATCHING_ROAD_MAX_AGE_SECONDS).toBe(300);
+    });
+  });
+
+  it("parses bounded routing policy values independently from display estimates", () => {
+    withEnv(
+      {
+        MATCHING_ROAD_TIMES_ENABLED: "true",
+        MATCHING_ROAD_TRAVEL_MULTIPLIER: "1.4",
+      },
+      () => {
+        expect(loadEnv().MATCHING_ROAD_TIMES_ENABLED).toBe(true);
+        expect(loadEnv().MATCHING_ROAD_TRAVEL_MULTIPLIER).toBe(1.4);
+      },
+    );
+  });
+
   it("returns a parsed env object with all required fields on a valid config", () => {
     withEnv({}, () => {
       const env = loadEnv();
@@ -209,5 +229,122 @@ describe("loadEnv()", () => {
     _resetEnvForTesting();
     const { getEnv } = await import("./env.js");
     expect(() => getEnv()).toThrow("getEnv() called before loadEnv()");
+  });
+
+  describe("Service Bounding Box (AD-6)", () => {
+    it("accepts valid ROUTE_SERVICE_BBOX alias and derives individual coordinates", () => {
+      withEnv(
+        {
+          ROUTE_SERVICE_BBOX: "66.8500,24.7000,67.3500,25.1500",
+          LAUNCH_CITY_BBOX_MIN_LAT: undefined,
+          LAUNCH_CITY_BBOX_MAX_LAT: undefined,
+          LAUNCH_CITY_BBOX_MIN_LON: undefined,
+          LAUNCH_CITY_BBOX_MAX_LON: undefined,
+        },
+        () => {
+          const env = loadEnv();
+          expect(env.LAUNCH_CITY_BBOX_MIN_LON).toBe(66.85);
+          expect(env.LAUNCH_CITY_BBOX_MIN_LAT).toBe(24.7);
+          expect(env.LAUNCH_CITY_BBOX_MAX_LON).toBe(67.35);
+          expect(env.LAUNCH_CITY_BBOX_MAX_LAT).toBe(25.15);
+          expect(env.ROUTE_SERVICE_BBOX).toBe("66.85,24.7,67.35,25.15");
+        },
+      );
+    });
+
+    it("succeeds when alias and individual vars match within 0.0001 degrees", () => {
+      withEnv(
+        {
+          ROUTE_SERVICE_BBOX: "66.85005,24.70005,67.35005,25.15005",
+          LAUNCH_CITY_BBOX_MIN_LAT: "24.7000",
+          LAUNCH_CITY_BBOX_MAX_LAT: "25.1500",
+          LAUNCH_CITY_BBOX_MIN_LON: "66.8500",
+          LAUNCH_CITY_BBOX_MAX_LON: "67.3500",
+        },
+        () => {
+          expect(() => loadEnv()).not.toThrow();
+        },
+      );
+    });
+
+    it("fails fast when alias and individual vars describe different boxes", () => {
+      const mockExit = jest.spyOn(process, "exit").mockImplementation(() => {
+        throw new Error("process.exit called");
+      });
+      const mockStderr = jest
+        .spyOn(process.stderr, "write")
+        .mockImplementation(() => true);
+
+      withEnv(
+        {
+          ROUTE_SERVICE_BBOX: "66.8500,24.7000,67.3500,25.1500",
+          LAUNCH_CITY_BBOX_MIN_LAT: "24.8000", // 0.1 deg discrepancy
+          LAUNCH_CITY_BBOX_MAX_LAT: "25.1500",
+          LAUNCH_CITY_BBOX_MIN_LON: "66.8500",
+          LAUNCH_CITY_BBOX_MAX_LON: "67.3500",
+        },
+        () => {
+          expect(() => loadEnv()).toThrow("process.exit called");
+          expect(mockStderr).toHaveBeenCalledWith(
+            expect.stringContaining("different bounding boxes"),
+          );
+        },
+      );
+
+      mockExit.mockRestore();
+      mockStderr.mockRestore();
+    });
+
+    it("fails fast when ROUTE_SERVICE_BBOX is malformed", () => {
+      const mockExit = jest.spyOn(process, "exit").mockImplementation(() => {
+        throw new Error("process.exit called");
+      });
+      const mockStderr = jest
+        .spyOn(process.stderr, "write")
+        .mockImplementation(() => true);
+
+      withEnv(
+        {
+          ROUTE_SERVICE_BBOX: "not,numeric,coords,here",
+        },
+        () => {
+          expect(() => loadEnv()).toThrow("process.exit called");
+          expect(mockStderr).toHaveBeenCalledWith(
+            expect.stringContaining("ROUTE_SERVICE_BBOX"),
+          );
+        },
+      );
+
+      mockExit.mockRestore();
+      mockStderr.mockRestore();
+    });
+
+    it("fails fast when coordinates are inverted", () => {
+      const mockExit = jest.spyOn(process, "exit").mockImplementation(() => {
+        throw new Error("process.exit called");
+      });
+      const mockStderr = jest
+        .spyOn(process.stderr, "write")
+        .mockImplementation(() => true);
+
+      withEnv(
+        {
+          ROUTE_SERVICE_BBOX: "66.85,25.15,67.35,24.70", // inverted lat
+          LAUNCH_CITY_BBOX_MIN_LAT: undefined,
+          LAUNCH_CITY_BBOX_MAX_LAT: undefined,
+          LAUNCH_CITY_BBOX_MIN_LON: undefined,
+          LAUNCH_CITY_BBOX_MAX_LON: undefined,
+        },
+        () => {
+          expect(() => loadEnv()).toThrow("process.exit called");
+          expect(mockStderr).toHaveBeenCalledWith(
+            expect.stringContaining("LAUNCH_CITY_BBOX_MAX_LAT"),
+          );
+        },
+      );
+
+      mockExit.mockRestore();
+      mockStderr.mockRestore();
+    });
   });
 });

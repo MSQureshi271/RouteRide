@@ -27,6 +27,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { getEnv } from "@routeride/config";
+import { mutateDriverProfile } from "./profile-mutation.js";
 import type {
   OnboardDriverRequest,
   DriverProfile,
@@ -54,6 +55,8 @@ interface DriverProfileRow {
   acceptance_rate: string | null;
   created_at: string | Date;
   updated_at: string | Date;
+  route_polyline?: DriverProfile["routePolyline"];
+  coverage_configured?: boolean;
 }
 
 // ─── Helper to map raw row → DriverProfile contract type ───────────────────
@@ -79,6 +82,7 @@ function rowToProfile(row: DriverProfileRow): DriverProfile {
       row.acceptance_rate != null ? Number(row.acceptance_rate) : null,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
+    ...(row.route_polyline ? { routePolyline: row.route_polyline } : {}),
   };
 }
 
@@ -186,7 +190,8 @@ export class DriversService {
         id, user_id, licence_number, vehicle_make, vehicle_model, vehicle_year,
         vehicle_colour, plate_number, seat_capacity, operating_days,
         base_price_cents, currency, status, verification_tier,
-        acceptance_rate, created_at, updated_at
+        acceptance_rate, created_at, updated_at,
+        ST_AsGeoJSON(route_polyline::geometry)::json AS route_polyline
       FROM driver_profiles
       WHERE user_id = ${userId}
       LIMIT 1
@@ -231,7 +236,10 @@ export class DriversService {
         id, user_id, licence_number, vehicle_make, vehicle_model, vehicle_year,
         vehicle_colour, plate_number, seat_capacity, operating_days,
         base_price_cents, currency, status, verification_tier,
-        acceptance_rate, created_at, updated_at
+        acceptance_rate, created_at, updated_at,
+        (NOT coverage_setup_required AND service_area IS NOT NULL AND starting_location IS NOT NULL
+         AND EXISTS (SELECT 1 FROM driver_availability a WHERE a.driver_profile_id = driver_profiles.id))
+        AS coverage_configured
       FROM driver_profiles
       WHERE user_id = ${userId}
       LIMIT 1
@@ -308,6 +316,7 @@ export class DriversService {
 
     // 4. Check availability & pricing completeness
     const availabilityCompleted = Boolean(
+      profile.coverage_configured &&
       Array.isArray(profile.operating_days) &&
       profile.operating_days.length > 0 &&
       typeof profile.base_price_cents === "number" &&
@@ -407,7 +416,27 @@ export class DriversService {
       ? `{${dto.operatingDays.join(",")}}`
       : null;
 
-    const rows = (await this.prisma.sql`
+    const rows = (await mutateDriverProfile(
+      this.prisma,
+      userId,
+      dto.operatingDays !== undefined,
+      async (sql) => {
+        if (dto.operatingDays) {
+          const offered = await sql<{ operating_day: number }>`
+            SELECT DISTINCT operating_day FROM driver_availability WHERE driver_profile_id = ${existing.id}
+          `;
+          const offeredDays = new Set(offered.map((row) => row.operating_day));
+          if (
+            offeredDays.size &&
+            (offeredDays.size !== dto.operatingDays.length ||
+              dto.operatingDays.some((day) => !offeredDays.has(day)))
+          ) {
+            throw new ConflictException(
+              "Change offered days and leg windows together in service-area settings",
+            );
+          }
+        }
+        return sql`
       UPDATE driver_profiles
       SET
         operating_days = COALESCE(
@@ -418,6 +447,7 @@ export class DriversService {
           ${dto.basePriceCents ?? null}::integer,
           base_price_cents
         ),
+        availability_version = availability_version + 1,
         updated_at = NOW()
       WHERE user_id = ${userId}
       RETURNING
@@ -425,7 +455,9 @@ export class DriversService {
         vehicle_colour, plate_number, seat_capacity, operating_days,
         base_price_cents, currency, status, verification_tier,
         acceptance_rate, created_at, updated_at
-    `) as unknown as DriverProfileRow[];
+    `;
+      },
+    )) as unknown as DriverProfileRow[];
 
     return rowToProfile(rows[0]!);
   }
@@ -465,10 +497,26 @@ export class DriversService {
     const geojsonString = JSON.stringify(geojson);
 
     // Validate with PostGIS ST_IsValid and store
-    const rows = (await this.prisma.sql`
+    const rows = (await mutateDriverProfile(
+      this.prisma,
+      userId,
+      true,
+      async (sql) => {
+        const geometry = await sql<{ valid: boolean }>`
+        SELECT ST_IsValid(g) AND ST_IsSimple(g) AND NOT ST_IsEmpty(g)
+          AND ST_GeometryType(g) = 'ST_LineString' AS valid
+        FROM (SELECT ST_SetSRID(ST_GeomFromGeoJSON(${geojsonString}),4326) g) route
+      `;
+        if (!geometry[0]?.valid)
+          throw new UnprocessableEntityException(
+            "Route must be a valid simple LineString",
+          );
+        return sql`
       UPDATE driver_profiles
       SET
         route_polyline = ST_SetSRID(ST_GeomFromGeoJSON(${geojsonString}), 4326),
+        route_state = 'ESTABLISHED',
+        availability_version = availability_version + 1,
         updated_at = NOW()
       WHERE user_id = ${userId}
       RETURNING
@@ -476,7 +524,9 @@ export class DriversService {
         vehicle_colour, plate_number, seat_capacity, operating_days,
         base_price_cents, currency, status, verification_tier,
         acceptance_rate, created_at, updated_at
-    `) as unknown as DriverProfileRow[];
+    `;
+      },
+    )) as unknown as DriverProfileRow[];
 
     if (rows.length === 0) {
       throw new NotFoundException("Driver profile not found");

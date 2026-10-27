@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createSuccessEnvelopeSchema } from "../common/envelope.js";
 
-export const TripTypeSchema = z.enum(["MORNING", "AFTERNOON"]);
+export const TripTypeSchema = z.enum(["DEPARTURE", "PICKUP"]);
 export const TripStatusSchema = z.enum([
   "SCHEDULED",
   "IN_PROGRESS",

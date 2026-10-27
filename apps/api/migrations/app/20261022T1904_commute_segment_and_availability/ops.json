@@ -1,0 +1,52 @@
+[
+  {
+    "id": "commute.segment.availability.transition",
+    "label": "Rename commute segments and make driver availability time-based",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [
+      {
+        "description": "old commute labels exist and no run mixes segment meanings",
+        "sql": "SELECT\n              (SELECT array_agg(e.enumlabel::text ORDER BY e.enumsortorder)\n                 FROM pg_type t JOIN pg_enum e ON e.enumtypid=t.oid\n                WHERE t.typnamespace='public'::regnamespace AND t.typname='ScheduleLegType')\n                = ARRAY['MORNING','AFTERNOON']::text[]\n              AND (\n                (SELECT array_agg(e.enumlabel::text ORDER BY e.enumsortorder)\n                   FROM pg_type t JOIN pg_enum e ON e.enumtypid=t.oid\n                  WHERE t.typnamespace='public'::regnamespace AND t.typname='TripType')\n                  = ARRAY['MORNING','AFTERNOON']::text[]\n                OR NOT EXISTS (SELECT 1 FROM pg_type t\n                  WHERE t.typnamespace='public'::regnamespace AND t.typname='TripType')\n              )\n              AND EXISTS (SELECT 1 FROM information_schema.columns\n                WHERE table_schema='public' AND table_name='driver_availability' AND column_name='leg_type')\n              AND NOT EXISTS (\n                SELECT 1 FROM run_assignments ra JOIN subscriptions s ON s.id=ra.subscription_id\n                GROUP BY ra.run_id\n                HAVING count(DISTINCT CASE\n                  WHEN s.type='ROUND_TRIP' AND ra.leg_type::text='AFTERNOON' THEN 'PICKUP'\n                  ELSE 'DEPARTURE' END)>1\n              )"
+      }
+    ],
+    "execute": [
+      {
+        "description": "defer assignment parent keys during segment remapping",
+        "sql": "ALTER TABLE run_assignments\n                ALTER CONSTRAINT fk_assignment_run DEFERRABLE INITIALLY IMMEDIATE;\n              SET CONSTRAINTS fk_assignment_run DEFERRED"
+      },
+      {
+        "description": "allow multiple disjoint intervals per operating day",
+        "sql": "ALTER TABLE driver_availability\n              DROP CONSTRAINT IF EXISTS uq_driver_availability_day_leg"
+      },
+      {
+        "description": "merge availability intervals while preserving gaps and rows",
+        "sql": "WITH merged AS MATERIALIZED (\n                SELECT driver_profile_id, operating_day,\n                  lower(window_range)::time AS window_start,\n                  upper(window_range)::time AS window_end\n                FROM (\n                  SELECT driver_profile_id, operating_day,\n                    unnest(range_agg(tsrange(\n                      DATE '2000-01-01' + window_start,\n                      DATE '2000-01-01' + window_end,\n                      '[)'\n                    ))) AS window_range\n                  FROM driver_availability\n                  GROUP BY driver_profile_id, operating_day\n                ) intervals\n              ), removed AS (\n                DELETE FROM driver_availability RETURNING 1\n              )\n              INSERT INTO driver_availability\n                (id, driver_profile_id, operating_day, leg_type, window_start, window_end)\n              SELECT gen_random_uuid()::text, merged.driver_profile_id,\n                merged.operating_day, 'MORNING'::public.\"ScheduleLegType\",\n                merged.window_start, merged.window_end\n              FROM merged CROSS JOIN (SELECT count(*) FROM removed) AS deletion"
+      },
+      {
+        "description": "remove per-leg availability constraint and column, then index intervals",
+        "sql": "ALTER TABLE driver_availability\n                DROP CONSTRAINT IF EXISTS uq_driver_availability_day_leg;\n              ALTER TABLE driver_availability DROP COLUMN leg_type;\n              CREATE INDEX idx_driver_availability_day_window\n                ON driver_availability(driver_profile_id, operating_day, window_start, window_end)"
+      },
+      {
+        "description": "rename stored run segment enum values",
+        "sql": "ALTER TYPE public.\"ScheduleLegType\" RENAME VALUE 'MORNING' TO 'DEPARTURE';\n              ALTER TYPE public.\"ScheduleLegType\" RENAME VALUE 'AFTERNOON' TO 'PICKUP';\n              DO $$ BEGIN\n                IF EXISTS (SELECT 1 FROM pg_type t JOIN pg_enum e ON e.enumtypid=t.oid\n                  WHERE t.typnamespace='public'::regnamespace AND t.typname='TripType') THEN\n                  EXECUTE 'ALTER TYPE public.\"TripType\" RENAME VALUE ''MORNING'' TO ''DEPARTURE''';\n                  EXECUTE 'ALTER TYPE public.\"TripType\" RENAME VALUE ''AFTERNOON'' TO ''PICKUP''';\n                END IF;\n              END $$"
+      },
+      {
+        "description": "map one-way afternoon commitments to departure segments",
+        "sql": "UPDATE driver_schedule_slots slot SET leg_type='DEPARTURE'\n                FROM subscriptions s WHERE s.id=slot.subscription_id\n                  AND s.type='AFTERNOON' AND slot.leg_type='PICKUP';\n              UPDATE run_assignments assignment SET leg_type='DEPARTURE'\n                FROM subscriptions s WHERE s.id=assignment.subscription_id\n                  AND s.type='AFTERNOON' AND assignment.leg_type='PICKUP';\n              UPDATE recurring_runs run SET leg_type=mapped.leg_type\n                FROM (\n                  SELECT ra.run_id,\n                    min(ra.leg_type::text)::public.\"ScheduleLegType\" AS leg_type\n                  FROM run_assignments ra\n                  JOIN subscriptions s ON s.id=ra.subscription_id\n                  GROUP BY ra.run_id\n                  HAVING count(DISTINCT ra.leg_type::text)=1\n                ) mapped WHERE run.id=mapped.run_id;\n              SET CONSTRAINTS fk_assignment_run IMMEDIATE;\n              SELECT 1"
+      },
+      {
+        "description": "replace subscription and trip type checks with one-way and segment values",
+        "sql": "ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_type_check_d04a7056;\n              ALTER TABLE trips DROP CONSTRAINT IF EXISTS trips_type_check_4f232f02;\n              UPDATE trips trip SET type=CASE\n                WHEN s.type IN ('MORNING','AFTERNOON') THEN 'DEPARTURE'\n                WHEN trip.type='MORNING' THEN 'DEPARTURE'\n                WHEN trip.type='AFTERNOON' THEN 'PICKUP'\n                ELSE trip.type END\n                FROM subscriptions s WHERE s.id=trip.subscription_id;\n              UPDATE subscriptions SET type='ONE_WAY' WHERE type IN ('MORNING','AFTERNOON');\n              ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_type_check_d6e2f9ad\n                CHECK (type IN ('ONE_WAY','ROUND_TRIP'));\n              ALTER TABLE trips ADD CONSTRAINT trips_type_check_72e8e2c8\n                CHECK (type IN ('DEPARTURE','PICKUP'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "new commute values and interval availability are in place",
+        "sql": "SELECT\n              (SELECT array_agg(e.enumlabel::text ORDER BY e.enumsortorder)\n                 FROM pg_type t JOIN pg_enum e ON e.enumtypid=t.oid\n                WHERE t.typnamespace='public'::regnamespace AND t.typname='ScheduleLegType')\n                = ARRAY['DEPARTURE','PICKUP']::text[]\n              AND NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_enum e ON e.enumtypid=t.oid\n                WHERE t.typnamespace='public'::regnamespace AND t.typname='TripType'\n                  AND e.enumlabel::text IN ('MORNING','AFTERNOON'))\n              AND NOT EXISTS (SELECT 1 FROM information_schema.columns\n                WHERE table_schema='public' AND table_name='driver_availability' AND column_name='leg_type')\n              AND to_regclass('public.idx_driver_availability_day_window') IS NOT NULL\n              AND NOT EXISTS (SELECT 1 FROM subscriptions WHERE type IN ('MORNING','AFTERNOON'))\n              AND NOT EXISTS (SELECT 1 FROM trips WHERE type IN ('MORNING','AFTERNOON'))\n              AND NOT EXISTS (\n                SELECT 1 FROM driver_availability a JOIN driver_availability b\n                  ON a.driver_profile_id=b.driver_profile_id AND a.operating_day=b.operating_day\n                  AND a.id < b.id AND a.window_start < b.window_end AND b.window_start < a.window_end\n              )"
+      }
+    ]
+  }
+]

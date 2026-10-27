@@ -1,5 +1,7 @@
 # ADR-009: `driver_schedule_slots` as a Derived Conflict-Detection Cache
 
+> **Partially superseded by [ADR-011](ADR-011-service-area-discovery-and-driver-acceptance.md), 2026-10-21.** Derived slots remain transactional, but reconstruction now uses subscription commitments plus recurring run assignments and stop order. Blanket overlap rejection and the historical state names/transaction alternatives below are no longer the current acceptance specification.
+
 ## Status
 
 Accepted

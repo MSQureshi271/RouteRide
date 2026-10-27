@@ -1,5 +1,9 @@
 # SPEC-DELTA-mvp.md — RouteRide MVP Scope and Conflict Resolution Record
 
+> **B6 — approved 2026-10-21:** [ADR-011](decisions/ADR-011-service-area-discovery-and-driver-acceptance.md) replaces mandatory-corridor discovery with availability and ranked recommendations. A declared service area and platform launch bounds constrain discovery. Consumers may request any available candidate; drivers accept only after capacity and timing checks. Route-free drivers can establish their first run. [Phase 1A amendment](../tasks/PHASE1A-service-area-amendment.md) defines the work.
+>
+> B1's mandatory stored-polyline direction algorithm and B4's blanket interval-overlap rejection are superseded. Both round-trip legs remain mandatory, but offered legs are explicit and compatible riders can share a run. Preserve B2, B3 and B5. Historical B4's 80% search-result target is not an acceptance/on-time-service guarantee: report discovery coverage, request acceptance, and on-time service separately; re-baseline targets on the amended population before launch.
+
 > **Purpose:** This document records every resolved conflict between the PRD v1.0 and TRD v1.0, plus every scope decision that changes what the MVP builds. It is the authoritative record of what the PRD/TRD say and what we are actually building, and why they differ. Every affected module spec (`SPEC-*.md`) must link to the relevant section here.
 >
 > **Status:** B1, B2, B3 resolved 2026-08-23. B4 resolved 2026-08-23 (see §4 below). B5 resolved 2026-08-23.

@@ -131,6 +131,10 @@ export default function DriverAppLayout() {
           title: "My Route",
         }}
       />
+      <Tabs.Screen
+        name="service-area"
+        options={{ href: null, title: "Service area and availability" }}
+      />
     </Tabs>
   );
 }

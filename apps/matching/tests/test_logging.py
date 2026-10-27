@@ -1,10 +1,12 @@
 """Unit tests for structlog structured logging, coordinate rounding, and PII redaction."""
+
 import pytest
 import structlog
+
 from app.logging import (
     configure_logging,
-    round_coordinates_processor,
     redact_sensitive_processor,
+    round_coordinates_processor,
 )
 
 

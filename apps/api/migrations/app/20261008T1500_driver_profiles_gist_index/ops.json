@@ -1,0 +1,23 @@
+[
+  {
+    "id": "app.driver-profile-gist-indexes",
+    "label": "Ensure geography-based driver and rider GiST indexes",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "riders"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Apply the reviewed legacy SQL migration",
+        "sql": "-- ═══════════════════════════════════════════════════════════════════════════════\n-- RouteRide Phase 1A Task 1.09 Migration: PostGIS GIST Spatial Indexes\n--\n-- 1. Verifies/creates idx_dp_route on driver_profiles USING gist (((route_polyline::geography)))\n--    Guards against stale/uncast definitions that defeat PostgreSQL cost-based index scans.\n-- 2. Creates idx_riders_home and idx_riders_dest on riders USING gist (((...::geography)))\n--    Completing the 3 PostGIS GIST spatial indexes mandated by TRD §3.2.\n-- ═══════════════════════════════════════════════════════════════════════════════\n\n\nCREATE EXTENSION IF NOT EXISTS postgis;\n\n-- ─── 1. idx_dp_route on driver_profiles ───────────────────────────────────────\nDO $$\nBEGIN\n  -- Drop index if it exists with a stale or non-geography definition\n  IF EXISTS (\n    SELECT 1 FROM pg_indexes \n    WHERE schemaname = 'public' \n      AND tablename = 'driver_profiles' \n      AND indexname = 'idx_dp_route'\n      AND indexdef NOT LIKE '%gist%((route_polyline)::geography)%'\n  ) THEN\n    DROP INDEX idx_dp_route;\n  END IF;\n\n  CREATE INDEX IF NOT EXISTS idx_dp_route \n  ON driver_profiles USING gist (((route_polyline::geography)));\nEND $$;\n\n-- ─── 2. idx_riders_home and idx_riders_dest on riders ─────────────────────────\nDO $$\nBEGIN\n  IF EXISTS (\n    SELECT 1 FROM pg_indexes \n    WHERE schemaname = 'public' \n      AND tablename = 'riders' \n      AND indexname = 'idx_riders_home'\n      AND indexdef NOT LIKE '%gist%((home_location)::geography)%'\n  ) THEN\n    DROP INDEX idx_riders_home;\n  END IF;\n\n  CREATE INDEX IF NOT EXISTS idx_riders_home \n  ON riders USING gist (((home_location::geography)));\nEND $$;\n\nDO $$\nBEGIN\n  IF EXISTS (\n    SELECT 1 FROM pg_indexes \n    WHERE schemaname = 'public' \n      AND tablename = 'riders' \n      AND indexname = 'idx_riders_dest'\n      AND indexdef NOT LIKE '%gist%((dest_location)::geography)%'\n  ) THEN\n    DROP INDEX idx_riders_dest;\n  END IF;\n\n  CREATE INDEX IF NOT EXISTS idx_riders_dest \n  ON riders USING gist (((dest_location::geography)));\nEND $$;\n\n"
+      }
+    ],
+    "postcheck": []
+  }
+]

@@ -11,7 +11,6 @@ import {
   FlatList,
   Modal,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -105,7 +104,7 @@ export function LocationDropdown({
             style={styles.modalContent}
             onPress={(e) => e.stopPropagation()}
           >
-            <SafeAreaView style={styles.modalInner}>
+            <View style={styles.modalInner}>
               <View style={styles.modalHeader}>
                 <View>
                   <Text style={styles.modalTitle}>Built-in Test Locations</Text>
@@ -153,7 +152,7 @@ export function LocationDropdown({
                   );
                 }}
               />
-            </SafeAreaView>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>

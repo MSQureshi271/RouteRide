@@ -1,5 +1,14 @@
 # SPEC: notifications
 
+## Subscription request lifecycle (current)
+
+Scope delta: [B6](SPEC-DELTA-mvp.md) / [ADR-011](decisions/ADR-011-service-area-discovery-and-driver-acceptance.md), master task T1.24.
+
+- Notify the target driver of a committed pending request. Notify the consumer on acceptance, decline or expiry; notify the driver of pending withdrawal. `SUBSCRIPTION_ACCEPTED` is an event name for the transition to `ACTIVE`, not an `ACCEPTED` database state.
+- Persist lifecycle events with the state transaction using an outbox, dispatch after commit, and deduplicate by event/recipient. A rolled-back acceptance emits nothing; a crash between commit and dispatch must be recoverable.
+- Acceptance content reflects the committed days/legs and terms. Push/lock-screen previews never include child names, addresses, precise coordinates or another rider's schedule. Links require current role/ownership checks.
+- Test replay, expiry-versus-acceptance races, failed transactions, and outbox recovery. Only the winning transition sends its event.
+
 > **Module ID:** `notifications`  
 > **Status:** Draft / Phase 0  
 > **Capability Map Reference:** `tasks/plan.md` §3 (`notifications`)

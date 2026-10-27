@@ -73,6 +73,16 @@ describe("Schema & Indexes Specification (TRD §3.1 & §3.2)", () => {
     expect(contract).toContain("idx_messages_sub");
     expect(contract).toContain("idx_audit_entity");
     expect(contract).toContain("idx_idempotency_expires");
+
+    const gistMigration = fs.readFileSync(
+      path.resolve(
+        "migrations/app/20261008T1500_driver_profiles_gist_index/migration.sql",
+      ),
+      "utf-8",
+    );
+    expect(gistMigration).toContain("idx_dp_route");
+    expect(gistMigration).toContain("((route_polyline)::geography)");
+    expect(gistMigration).toContain("USING gist");
   });
 
   it("verifies init migration contains all 10 enum definitions and tables", () => {
@@ -121,12 +131,8 @@ describe("Schema & Indexes Specification (TRD §3.1 & §3.2)", () => {
       expect(contract).toContain(`model ${t}`);
     }
 
-    const appMigrationDirs = fs.readdirSync(path.resolve("migrations/app"));
-    const latestAppDir = appMigrationDirs
-      .filter((d) => !d.startsWith("."))
-      .pop()!;
     const appOps = fs.readFileSync(
-      path.resolve("migrations/app", latestAppDir, "ops.json"),
+      path.resolve("migrations/app/20260829T1642_migration/ops.json"),
       "utf-8",
     );
 

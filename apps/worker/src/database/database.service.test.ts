@@ -21,6 +21,14 @@ describe("WorkerDatabaseService", () => {
     expect(mockPool.query).toHaveBeenCalledWith("SELECT 1", []);
   });
 
+  it("acquires a client from the pool via getClient", async () => {
+    const mockClient = { query: jest.fn(), release: jest.fn() };
+    mockPool.connect = jest.fn().mockResolvedValue(mockClient);
+    const client = await service.getClient();
+    expect(client).toBe(mockClient);
+    expect(mockPool.connect).toHaveBeenCalled();
+  });
+
   it("clears user FCM token", async () => {
     await service.clearUserFcmToken("usr-abc");
     expect(mockPool.query).toHaveBeenCalledWith(

@@ -1,5 +1,9 @@
 # SPEC: trips
 
+## Recurring run amendment (current)
+
+Scope delta: [B6](SPEC-DELTA-mvp.md) / [ADR-011](decisions/ADR-011-service-area-discovery-and-driver-acceptance.md). T1.25/T1.26 must instantiate each accepted recurring run for its day/leg, with rider manifests sourced from committed assignments and ordered stops. Shared riders belong to one run, not conflicting parallel vehicle journeys. Pending requests create no trips. Preserve both legs, effective cancellation dates and per-rider status; snapshot the committed run version for execution. Verify first-run creation, shared-run manifests, round trips and effective-date removal. This does not authorize dynamic rerouting of an in-progress trip.
+
 > **Module ID:** `trips`  
 > **Status:** Draft / Phase 0  
 > **Capability Map Reference:** `tasks/plan.md` §3 (`trips`)
@@ -8,7 +12,7 @@
 
 ## 1. Objective
 
-Provide daily recurring trip instantiation from active subscriptions, govern the trip execution state machine (`SCHEDULED` -> `IN_PROGRESS` -> `COMPLETED` / `CANCELLED`), generate driver turn-by-turn stop manifests (morning pickup runs, afternoon school return runs), and manage per-rider pickup/dropoff status marking (`WAITING` -> `PICKED_UP` -> `DROPPED_OFF` -> `NO_SHOW`).
+Provide daily recurring trip instantiation from active subscriptions, govern the trip execution state machine (`SCHEDULED` -> `IN_PROGRESS` -> `COMPLETED` / `CANCELLED`), generate driver turn-by-turn stop manifests for the committed `DEPARTURE` and optional `PICKUP` segments, and manage per-rider pickup/dropoff status marking (`WAITING` -> `PICKED_UP` -> `DROPPED_OFF` -> `NO_SHOW`). These segment names are independent of the time of day.
 
 ### User Personas
 - **Driver:** Views daily manifest, clicks "Start Trip", marks students as picked up or dropped off with one tap.

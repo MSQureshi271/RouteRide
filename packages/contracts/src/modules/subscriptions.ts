@@ -2,9 +2,10 @@ import { z } from "zod";
 import { GeoPointSchema } from "./geo.js";
 import { createSuccessEnvelopeSchema } from "../common/envelope.js";
 
-export const SubTypeSchema = z.enum(["MORNING", "AFTERNOON", "ROUND_TRIP"]);
+export const SubTypeSchema = z.enum(["ONE_WAY", "ROUND_TRIP"]);
 export const SubStatusSchema = z.enum([
   "PENDING",
+  "DECLINED",
   "ACTIVE",
   "PAUSED",
   "CANCELLED",

@@ -1,0 +1,33 @@
+[
+  {
+    "id": "app.align-existing-postgres-types",
+    "label": "Preserve established PostgreSQL types in the matching contract",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "driver_matching_stats"
+      }
+    },
+    "precheck": [
+      {
+        "description": "The service-area migration must be applied first",
+        "sql": "SELECT to_regclass('public.driver_matching_stats') IS NOT NULL AND to_regclass('public.driver_availability') IS NOT NULL AND to_regclass('public.recurring_runs') IS NOT NULL AND to_regclass('public.run_assignments') IS NOT NULL AND to_regclass('public.driver_schedule_slots') IS NOT NULL AS result"
+      }
+    ],
+    "execute": [
+      {
+        "description": "Align columns without discarding existing time values",
+        "sql": "-- Preserve the deployed PostgreSQL representation of recurring schedule data.\n-- Existing time-of-day values are kept as TIME; non-null timestamps are rejected\n-- rather than converted with an invented date or timezone.\n\nDO $$\nDECLARE\n  existing_members text[];\n  departure_type text;\n  invalid_days boolean;\nBEGIN\n  SELECT array_agg(e.enumlabel::text ORDER BY e.enumsortorder)\n    INTO existing_members\n  FROM pg_type t\n  JOIN pg_namespace n ON n.oid = t.typnamespace\n  JOIN pg_enum e ON e.enumtypid = t.oid\n  WHERE n.nspname = 'public' AND t.typname = 'ScheduleLegType';\n\n  IF existing_members IS NULL THEN\n    CREATE TYPE public.\"ScheduleLegType\" AS ENUM ('MORNING', 'AFTERNOON');\n  ELSIF existing_members <> ARRAY['MORNING', 'AFTERNOON']::text[] THEN\n    RAISE EXCEPTION 'ScheduleLegType has unexpected values: %', existing_members;\n  END IF;\n\n  SELECT udt_name INTO departure_type\n  FROM information_schema.columns\n  WHERE table_schema = 'public' AND table_name = 'driver_matching_stats'\n    AND column_name = 'typical_departure_time';\n\n  IF departure_type = 'timestamptz' THEN\n    IF EXISTS (\n      SELECT 1 FROM driver_matching_stats WHERE typical_departure_time IS NOT NULL\n    ) THEN\n      RAISE EXCEPTION 'Non-null driver_matching_stats timestamps require an explicit time-of-day conversion decision';\n    END IF;\n    ALTER TABLE driver_matching_stats\n      ALTER COLUMN typical_departure_time TYPE time\n      USING (typical_departure_time AT TIME ZONE 'Asia/Karachi')::time;\n  ELSIF departure_type <> 'time' THEN\n    RAISE EXCEPTION 'Unexpected driver_matching_stats.typical_departure_time type: %', departure_type;\n  END IF;\n\n  IF EXISTS (SELECT 1 FROM driver_matching_stats WHERE operating_day NOT BETWEEN 0 AND 6)\n    OR EXISTS (SELECT 1 FROM driver_availability WHERE operating_day NOT BETWEEN 0 AND 6)\n    OR EXISTS (SELECT 1 FROM recurring_runs WHERE operating_day NOT BETWEEN 0 AND 6) THEN\n    RAISE EXCEPTION 'Operating-day values outside 0..6 cannot be narrowed to smallint';\n  END IF;\nEND $$;\n\nALTER TABLE driver_schedule_slots\n  DROP CONSTRAINT IF EXISTS driver_schedule_slots_leg_type_check_e8fc4c0a;\nALTER TABLE driver_availability\n  DROP CONSTRAINT IF EXISTS driver_availability_leg_type_check_e8fc4c0a;\nALTER TABLE recurring_runs\n  DROP CONSTRAINT IF EXISTS recurring_runs_leg_type_check_e8fc4c0a;\nALTER TABLE run_assignments\n  DROP CONSTRAINT IF EXISTS run_assignments_leg_type_check_e8fc4c0a;\n\n-- Rebuild the composite foreign key after both referenced enum columns change.\nALTER TABLE run_assignments DROP CONSTRAINT IF EXISTS fk_assignment_run;\n\nALTER TABLE driver_schedule_slots\n  ALTER COLUMN leg_type TYPE public.\"ScheduleLegType\" USING leg_type::text::public.\"ScheduleLegType\";\nALTER TABLE driver_availability\n  ALTER COLUMN leg_type TYPE public.\"ScheduleLegType\" USING leg_type::text::public.\"ScheduleLegType\",\n  ALTER COLUMN operating_day TYPE smallint USING operating_day::smallint;\nALTER TABLE recurring_runs\n  ALTER COLUMN leg_type TYPE public.\"ScheduleLegType\" USING leg_type::text::public.\"ScheduleLegType\",\n  ALTER COLUMN operating_day TYPE smallint USING operating_day::smallint;\nALTER TABLE run_assignments\n  ALTER COLUMN leg_type TYPE public.\"ScheduleLegType\" USING leg_type::text::public.\"ScheduleLegType\";\nALTER TABLE driver_matching_stats\n  ALTER COLUMN operating_day TYPE smallint USING operating_day::smallint;\n\nALTER TABLE run_assignments\n  ADD CONSTRAINT fk_assignment_run\n  FOREIGN KEY (run_id, driver_profile_id, leg_type)\n  REFERENCES recurring_runs(id, driver_profile_id, leg_type);\n"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "Confirm all matching columns use the contract types",
+        "sql": "SELECT (SELECT udt_name FROM information_schema.columns WHERE table_schema='public' AND table_name='driver_matching_stats' AND column_name='operating_day')='int2' AND (SELECT udt_name FROM information_schema.columns WHERE table_schema='public' AND table_name='driver_matching_stats' AND column_name='typical_departure_time')='time' AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name IN ('driver_schedule_slots','driver_availability','recurring_runs','run_assignments') AND column_name='leg_type' AND udt_name<>'ScheduleLegType') AS result"
+      }
+    ]
+  }
+]

@@ -26,6 +26,9 @@ import Constants from "expo-constants";
 import { Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { StatusBar as RNStatusBar } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { initApiClient, useAuthStore } from "@routeride/ui";
 
 SplashScreen.preventAutoHideAsync();
@@ -102,10 +105,18 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthBootstrap>
-        <Slot />
-      </AuthBootstrap>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <RNStatusBar
+        barStyle="dark-content"
+        backgroundColor="#ffffff"
+        translucent={false}
+      />
+      <StatusBar style="dark" />
+      <QueryClientProvider client={queryClient}>
+        <AuthBootstrap>
+          <Slot />
+        </AuthBootstrap>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

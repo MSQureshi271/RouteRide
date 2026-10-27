@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenHeader } from "../../src/components/common/ScreenHeader";
 import {
   Button,
   Input,
@@ -83,20 +84,23 @@ export default function ConsumerProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View style={styles.container}>
+        <ScreenHeader title="My Profile" testID="profile-header" />
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={["bottom"]}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+    <View style={styles.container}>
+      <ScreenHeader title="My Profile" testID="profile-header" />
+      <SafeAreaView style={styles.innerSafe} edges={["bottom"]}>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
@@ -194,12 +198,14 @@ export default function ConsumerProfileScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.background },
+  innerSafe: { flex: 1 },
   flex: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   content: { flexGrow: 1, padding: spacing.base, gap: spacing.base },

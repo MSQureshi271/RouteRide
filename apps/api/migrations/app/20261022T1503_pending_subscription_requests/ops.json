@@ -1,0 +1,463 @@
+[
+  {
+    "id": "column.public.subscriptions.requested_terms",
+    "label": "Add column \"requested_terms\" to \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "requested_terms",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"requested_terms\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "requested_terms"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"requested_terms\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ADD COLUMN \"requested_terms\" jsonb"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"requested_terms\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "requested_terms"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.subscriptions.response_deadline",
+    "label": "Add column \"response_deadline\" to \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "response_deadline",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"response_deadline\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "response_deadline"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"response_deadline\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ADD COLUMN \"response_deadline\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"response_deadline\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "response_deadline"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.subscriptions.agreed_dropoff_time",
+    "label": "Drop NOT NULL on \"subscriptions\".\"agreed_dropoff_time\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "agreed_dropoff_time",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"agreed_dropoff_time\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "agreed_dropoff_time"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"agreed_dropoff_time\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ALTER COLUMN \"agreed_dropoff_time\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"agreed_dropoff_time\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "agreed_dropoff_time",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.subscriptions.agreed_pickup_time",
+    "label": "Drop NOT NULL on \"subscriptions\".\"agreed_pickup_time\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "agreed_pickup_time",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"agreed_pickup_time\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "agreed_pickup_time"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"agreed_pickup_time\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ALTER COLUMN \"agreed_pickup_time\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"agreed_pickup_time\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "agreed_pickup_time",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.subscriptions.dropoff_address_text",
+    "label": "Drop NOT NULL on \"subscriptions\".\"dropoff_address_text\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "dropoff_address_text",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"dropoff_address_text\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "dropoff_address_text"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"dropoff_address_text\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ALTER COLUMN \"dropoff_address_text\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"dropoff_address_text\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "dropoff_address_text",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.subscriptions.next_billing_date",
+    "label": "Drop NOT NULL on \"subscriptions\".\"next_billing_date\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "next_billing_date",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"next_billing_date\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "next_billing_date"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"next_billing_date\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ALTER COLUMN \"next_billing_date\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"next_billing_date\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "next_billing_date",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.dropNotNull.subscriptions.pickup_address_text",
+    "label": "Drop NOT NULL on \"subscriptions\".\"pickup_address_text\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "pickup_address_text",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"pickup_address_text\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "pickup_address_text"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop NOT NULL on \"pickup_address_text\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ALTER COLUMN \"pickup_address_text\" DROP NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"pickup_address_text\" is nullable",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "pickup_address_text",
+          "YES"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.subscriptions.idx_subs_response_deadline",
+    "label": "Create index \"idx_subs_response_deadline\" on \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "idx_subs_response_deadline",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"idx_subs_response_deadline\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"idx_subs_response_deadline\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"idx_subs_response_deadline\"",
+        "sql": "CREATE INDEX \"idx_subs_response_deadline\" ON \"public\".\"subscriptions\" (\"status\", \"response_deadline\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"idx_subs_response_deadline\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"idx_subs_response_deadline\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.subscriptions.idx_subs_rider_driver_status",
+    "label": "Create index \"idx_subs_rider_driver_status\" on \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "idx_subs_rider_driver_status",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"idx_subs_rider_driver_status\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"idx_subs_rider_driver_status\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"idx_subs_rider_driver_status\"",
+        "sql": "CREATE INDEX \"idx_subs_rider_driver_status\" ON \"public\".\"subscriptions\" (\"rider_id\", \"driver_profile_id\", \"status\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"idx_subs_rider_driver_status\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"idx_subs_rider_driver_status\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.subscriptions.ck_subs_requested_terms_deadline",
+    "label": "Add check constraint \"ck_subs_requested_terms_deadline\" on \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "ck_subs_requested_terms_deadline",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ck_subs_requested_terms_deadline\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ck_subs_requested_terms_deadline",
+          "public",
+          "\"public\".\"subscriptions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"ck_subs_requested_terms_deadline\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ADD CONSTRAINT \"ck_subs_requested_terms_deadline\" CHECK ((requested_terms IS NULL AND response_deadline IS NULL) OR (requested_terms IS NOT NULL AND jsonb_typeof(requested_terms) = 'object' AND response_deadline IS NOT NULL))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ck_subs_requested_terms_deadline\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ck_subs_requested_terms_deadline",
+          "public",
+          "\"public\".\"subscriptions\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.subscriptions.ck_subs_pending_unbilled",
+    "label": "Add check constraint \"ck_subs_pending_unbilled\" on \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "ck_subs_pending_unbilled",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ck_subs_pending_unbilled\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ck_subs_pending_unbilled",
+          "public",
+          "\"public\".\"subscriptions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"ck_subs_pending_unbilled\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ADD CONSTRAINT \"ck_subs_pending_unbilled\" CHECK (requested_terms IS NULL OR status <> 'PENDING' OR next_billing_date IS NULL)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ck_subs_pending_unbilled\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ck_subs_pending_unbilled",
+          "public",
+          "\"public\".\"subscriptions\""
+        ]
+      }
+    ]
+  }
+]

@@ -49,8 +49,11 @@ const MOCK_PROFILE_ROW = {
   updated_at: new Date("2026-01-01T00:00:00Z"),
 };
 
-function makeMockPrisma(activeSubConflict = false) {
-  return {
+function makeMockPrisma(
+  activeSubConflict = false,
+  configuredDays: number[] = [],
+) {
+  const mock = {
     sql: jest.fn().mockImplementation((strings: TemplateStringsArray) => {
       const query = strings.join(" ");
       if (query.includes("SELECT") && query.includes("FROM driver_profiles")) {
@@ -59,15 +62,39 @@ function makeMockPrisma(activeSubConflict = false) {
       if (query.includes("driver_schedule_slots")) {
         return Promise.resolve([{ cnt: activeSubConflict ? "1" : "0" }]);
       }
+      if (query.includes("FROM driver_availability")) {
+        return Promise.resolve(
+          configuredDays.map((operating_day) => ({ operating_day })),
+        );
+      }
       if (query.includes("UPDATE driver_profiles")) {
         return Promise.resolve([MOCK_PROFILE_ROW]);
       }
       return Promise.resolve([]);
     }),
+  };
+  return {
+    ...mock,
+    pool: {
+      connect: async () => ({
+        query: async (text: string) => ({
+          rows: await mock.sql([text] as unknown as TemplateStringsArray),
+        }),
+        release: jest.fn(),
+      }),
+    },
   } as unknown as PrismaService;
 }
 
 describe("Driver Pricing and Availability (T0.40)", () => {
+  it("requires canonical coverage settings to change offered days once configured", async () => {
+    const service = new DriversService(makeMockPrisma(false, [1, 2, 3, 4, 5]));
+    await expect(
+      service.updateAvailability(MOCK_PROFILE_ROW.user_id, {
+        operatingDays: [1],
+      }),
+    ).rejects.toThrow(ConflictException);
+  });
   it("200 — updates price within platform bounds", async () => {
     const prisma = makeMockPrisma(false);
     const service = new DriversService(prisma);

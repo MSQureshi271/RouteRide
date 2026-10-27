@@ -1,4 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+jest.mock("ioredis", () => {
+  return jest.fn().mockImplementation(() => ({
+    quit: jest.fn().mockResolvedValue(undefined),
+  }));
+});
+
+let mockNotificationWorkerProcessor: ((job: any) => Promise<any>) | null = null;
+let mockNotificationWorkerFailed: ((job: any, err: any) => void) | null = null;
+
+jest.mock("bullmq", () => {
+  return {
+    Worker: jest.fn().mockImplementation((_name, processor, _opts) => {
+      mockNotificationWorkerProcessor = processor;
+      return {
+        on: jest.fn().mockImplementation((event, handler) => {
+          if (event === "failed") {
+            mockNotificationWorkerFailed = handler;
+          }
+        }),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+    }),
+  };
+});
+
 import { NotificationWorkerService } from "./notification-worker.service";
 import { StaleTokenError } from "./adapters/fcm.adapter";
 import type { Job } from "bullmq";
@@ -25,6 +50,40 @@ describe("NotificationWorkerService", () => {
       mockSmsAdapter as any,
       mockDbService as any,
     );
+  });
+
+  it("initializes and cleans up BullMQ worker and Redis connection", async () => {
+    await service.onModuleInit();
+
+    if (mockNotificationWorkerFailed) {
+      mockNotificationWorkerFailed({ id: "job-1" }, new Error("Delivery failed"));
+      mockNotificationWorkerFailed(undefined, new Error("Null job failed"));
+    }
+
+    if (mockNotificationWorkerProcessor) {
+      const payload: DeliveryPayload = {
+        userId: "user-123",
+        fcmToken: "valid-fcm-token",
+        type: "TRIP_ASSIGNED",
+        title: "Trip Assigned",
+        body: "You have a new trip.",
+        notificationId: "notif-1",
+      };
+      await mockNotificationWorkerProcessor({ id: "job-p", data: payload });
+      expect(mockFcmAdapter.send).toHaveBeenCalled();
+    }
+
+    await service.onModuleDestroy();
+  });
+
+  it("destroys cleanly when worker or redisConnection is undefined", async () => {
+    const uninitService = new NotificationWorkerService(
+      mockFcmAdapter as any,
+      mockSendgridAdapter as any,
+      mockSmsAdapter as any,
+      mockDbService as any,
+    );
+    await expect(uninitService.onModuleDestroy()).resolves.not.toThrow();
   });
 
   it("delivers push notification when fcmToken is present", async () => {
@@ -61,19 +120,18 @@ describe("NotificationWorkerService", () => {
 
     const mockJob = { id: "job-2", data: payload } as Job<DeliveryPayload>;
 
-    // Should catch the StaleTokenError, clear the token, and not fail the job
-    await expect(service.processJob(mockJob)).resolves.not.toThrow();
+    await service.processJob(mockJob);
 
     expect(mockDbService.clearUserFcmToken).toHaveBeenCalledWith("user-456");
   });
 
-  it("delivers email for eligible notification types", async () => {
+  it("delivers email when email address is present", async () => {
     const payload: DeliveryPayload = {
       userId: "user-789",
-      email: "user@example.com",
+      email: "rider@example.com",
       type: "SUBSCRIPTION_CONFIRMED",
       title: "Subscription Confirmed",
-      body: "Your monthly pass is active.",
+      body: "Your subscription is confirmed.",
       notificationId: "notif-3",
     };
 
@@ -84,9 +142,9 @@ describe("NotificationWorkerService", () => {
     expect(mockSendgridAdapter.send).toHaveBeenCalledWith(payload);
   });
 
-  it("delivers SMS for critical emergency notification types", async () => {
+  it("delivers SMS when phone number is present", async () => {
     const payload: DeliveryPayload = {
-      userId: "user-999",
+      userId: "user-321",
       phone: "+923001234567",
       type: "TRIP_CANCELLED",
       title: "Trip Cancelled",

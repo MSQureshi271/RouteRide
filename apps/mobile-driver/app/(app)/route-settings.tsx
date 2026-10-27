@@ -16,13 +16,13 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import {
   Button,
@@ -197,9 +197,18 @@ export default function RouteSettingsScreen() {
           </TouchableOpacity>
           <Text style={styles.title}>My Daily Route</Text>
           <Text style={styles.subtitle}>
-            Enter the stops you regularly drive through. We will use these to
-            match you with passengers whose commute overlaps with yours.
+            Optionally enter the stops you regularly drive through to help
+            consumers compare commute fit. You can receive requests without an
+            established route.
           </Text>
+          <Button
+            role="driver"
+            variant="secondary"
+            accessibilityLabel="Service area and availability"
+            onPress={() => router.push("/(app)/service-area" as never)}
+          >
+            Service area and availability
+          </Button>
         </View>
 
         {serverError && (

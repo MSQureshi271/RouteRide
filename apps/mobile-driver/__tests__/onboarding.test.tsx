@@ -5,7 +5,7 @@
  * Covers:
  *  - Step1VehicleScreen: Form validation, bounds, submit, 409 conflict handling
  *  - Step2DocumentsScreen: Mandatory document cards, upload flow, continue button
- *  - Step4AvailabilityScreen: Day toggle, price validation in PKR, submission
+ *  - Step4AvailabilityScreen: Confirmed schedule, price validation in PKR, submission
  *  - PendingScreen: Application under review display, status re-check, approval redirect, logout
  */
 import React from "react";
@@ -15,6 +15,7 @@ import Step1VehicleScreen from "../app/(onboarding)/step1-vehicle";
 import Step2DocumentsScreen from "../app/(onboarding)/step2-documents";
 import Step4AvailabilityScreen from "../app/(onboarding)/step4-availability";
 import PendingScreen from "../app/(onboarding)/pending";
+jest.mock("@quidone/react-native-wheel-picker");
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -102,6 +103,7 @@ class MockXHR {
 const mockGet = jest.fn();
 const mockPost = jest.fn();
 const mockPatch = jest.fn();
+const mockPut = jest.fn();
 const mockLogout = jest.fn();
 const mockSetUser = jest.fn();
 
@@ -125,6 +127,7 @@ jest.mock("@routeride/ui", () => {
       get: (...args: unknown[]) => mockGet(...args),
       post: (...args: unknown[]) => mockPost(...args),
       patch: (...args: unknown[]) => mockPatch(...args),
+      put: (...args: unknown[]) => mockPut(...args),
     }),
     useAuthStore: () => ({
       user: { id: "user-1", fullName: "Driver Test", role: "DRIVER" },
@@ -151,6 +154,38 @@ describe("Driver Onboarding Wizard (T0.43)", () => {
     mockUploadedDocs = [];
 
     mockGet.mockImplementation((url: string) => {
+      if (url === "/drivers/me/service-area") {
+        return Promise.resolve({
+          data: {
+            settings: {
+              serviceArea: {
+                type: "Polygon",
+                coordinates: [
+                  [
+                    [67, 24.8],
+                    [67.2, 24.8],
+                    [67.2, 25],
+                    [67, 25],
+                    [67, 24.8],
+                  ],
+                ],
+              },
+              startingLocation: { type: "Point", coordinates: [67.01, 24.86] },
+              availability: [1, 2, 3, 4, 5].map((day) => ({
+                day,
+                startTime: "06:00",
+                endTime: "10:00",
+              })),
+              acceptingRequests: true,
+              routeState: "UNSET",
+              routePolyline: null,
+            },
+            availabilityVersion: 1,
+            rosterVersion: 0,
+            requiresSetup: false,
+          },
+        });
+      }
       if (url === "/drivers/me/onboarding-status") {
         return Promise.resolve({ data: { ...mockOnboardingStatus } });
       }
@@ -359,51 +394,27 @@ describe("Driver Onboarding Wizard (T0.43)", () => {
 
   // ─── Step 4: Availability & Pricing ─────────────────────────────────────────
   describe("Step4AvailabilityScreen", () => {
-    it("renders operating days pills and monthly price input", async () => {
+    it("renders the schedule editor and monthly price input", async () => {
       const { getByText, getByPlaceholderText } = render(
         <Step4AvailabilityScreen />,
       );
 
       await waitFor(() => {
-        expect(getByText("Mon")).toBeTruthy();
-        expect(getByText("Fri")).toBeTruthy();
+        expect(getByText("Your driving hours")).toBeTruthy();
+        expect(getByText("Schedule preview")).toBeTruthy();
+        expect(getByText("Service area and availability")).toBeTruthy();
         expect(getByPlaceholderText("10,000")).toBeTruthy();
         expect(getByText("Submit Application")).toBeTruthy();
       });
     });
 
-    it("allows toggling operating days on and off", async () => {
-      const { getByText } = render(<Step4AvailabilityScreen />);
-
-      await waitFor(() => {
-        expect(getByText("Mon")).toBeTruthy();
-      });
-
-      // Mon is selected by default ([1,2,3,4,5]), tap to deselect
-      fireEvent.press(getByText("Mon"));
-      // Tap again to reselect
-      fireEvent.press(getByText("Mon"));
-    });
-
-    it("shows error when all operating days are deselected", async () => {
-      const { getByText } = render(<Step4AvailabilityScreen />);
-
-      await waitFor(() => {
-        expect(getByText("Mon")).toBeTruthy();
-      });
-
-      // Deselect all default days: 1, 2, 3, 4, 5
-      fireEvent.press(getByText("Mon"));
-      fireEvent.press(getByText("Tue"));
-      fireEvent.press(getByText("Wed"));
-      fireEvent.press(getByText("Thu"));
-      fireEvent.press(getByText("Fri"));
-
-      fireEvent.press(getByText("Submit Application"));
-
-      await waitFor(() => {
-        expect(getByText("Select at least one operating day.")).toBeTruthy();
-      });
+    it("previews existing hours as one group of work days", async () => {
+      const { getByText, getByTestId } = render(<Step4AvailabilityScreen />);
+      await waitFor(() =>
+        expect(getByTestId("service-area-start")).toBeTruthy(),
+      );
+      expect(getByText("Mon–Fri")).toBeTruthy();
+      expect(getByText("6:00 AM – 10:00 AM")).toBeTruthy();
     });
 
     it("validates price within platform bounds", async () => {
@@ -416,6 +427,9 @@ describe("Driver Onboarding Wizard (T0.43)", () => {
       });
 
       // Price too low (below 5000 PKR)
+      await waitFor(() =>
+        expect(getByText("Service area and availability")).toBeTruthy(),
+      );
       fireEvent.changeText(getByPlaceholderText("10,000"), "1000");
       fireEvent.press(getByText("Submit Application"));
 
@@ -449,9 +463,16 @@ describe("Driver Onboarding Wizard (T0.43)", () => {
       });
 
       fireEvent.changeText(getByPlaceholderText("10,000"), "12000");
+      await waitFor(() =>
+        expect(getByText("Service area and availability")).toBeTruthy(),
+      );
       fireEvent.press(getByText("Submit Application"));
 
       await waitFor(() => {
+        expect(mockPut).toHaveBeenCalledWith(
+          "/drivers/me/service-area",
+          expect.objectContaining({ routeState: "UNSET", routePolyline: null }),
+        );
         expect(mockPatch).toHaveBeenCalledWith(
           "/drivers/me",
           expect.objectContaining({

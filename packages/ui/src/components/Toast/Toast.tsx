@@ -18,7 +18,6 @@ import React, {
 import {
   Animated,
   Platform,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -144,7 +143,7 @@ export function ToastProvider({
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      <SafeAreaView
+      <View
         style={[
           styles.overlay,
           position === "top" ? styles.top : styles.bottom,
@@ -161,7 +160,7 @@ export function ToastProvider({
             />
           ))}
         </View>
-      </SafeAreaView>
+      </View>
     </ToastContext.Provider>
   );
 }

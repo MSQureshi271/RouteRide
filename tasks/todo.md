@@ -1,5 +1,9 @@
 # RouteRide MVP — Task List
 
+> **Amendment implementation:** [Progress, files and verification](PHASE1A-amendment-progress.md). Revised discovery/settings and feasibility foundations are implemented locally; native migration-chain repair, device verification and Phase 1B request/acceptance delivery remain explicit gates.
+
+> **Current discovery architecture:** [ADR-011](../docs/decisions/ADR-011-service-area-discovery-and-driver-acceptance.md); [amendment tasks A1.01-A1.12](PHASE1A-service-area-amendment.md). Complete the amendment prerequisites before T1.12. Phase 1B tasks below use service-area discovery, pending requests, driver approval and shared-run feasibility. Earlier checked tasks retain their historical meaning.
+
 Companion to `tasks/plan.md`. **Do not start `T0.*` until Gate D closes and the plan is approved.**
 
 **Legend** — Size: `XS` 1 file · `S` 1–2 · `M` 3–5. Nothing larger is allowed; an `L` task is a
@@ -403,72 +407,74 @@ do not assume a default command.
 
 ## Phase 1A — Route Matching and Discovery (`route-matching`, realistic: 3–4 weeks)
 
+> **Superseded baseline:** This Phase 1A checklist preserves prior work. Current requirements and unchecked amendment tasks A1.01-A1.12 are in [PHASE1A-service-area-amendment.md](PHASE1A-service-area-amendment.md). Use its T1.12/T1.13 criteria and checkpoints; do not execute the old corridor criteria below.
+
 > Highest-risk phase in the MVP. It is first for that reason. If the P99 budget cannot be met on
 > 500 drivers, that must surface here, not in week 15.
 
-- [ ] **T1.01 — Matching service scaffold** · `S` · deps: T0.09, T-D.03
+- [x] **T1.01 — Matching service scaffold** · `S` · deps: T0.09, T-D.03
   - **Do:** FastAPI app with `/health`, structlog wired to the shared log shape, OTel tracing, the shared config loader, and a pytest harness with a PostGIS-backed fixture database.
   - **Accept:** `/health` reports database reachability; logs match the Node services' field set including `requestId` propagated from the gateway; the pytest fixture applies migrations and seeds deterministically.
   - **Verify:** `pytest tests/` green on the empty scaffold; a request through the gateway shows one continuous trace across both services.
   - **Files:** `apps/matching/app/main.py`, `apps/matching/app/config.py`, `apps/matching/tests/conftest.py`
   - **Skills:** observability-and-instrumentation, source-driven-development
-- [ ] **T1.02 — Spatial candidate filter, with the TRD's aggregate bug fixed** · `M` · deps: T1.01, T0.13
+- [x] **T1.02 — Spatial candidate filter, with the TRD's aggregate bug fixed** · `M` · deps: T1.01, T0.13
   - **Do:** The `ST_DWithin` candidate query over `driver_profiles`, filtered on `status = 'APPROVED'` and an `operating_days` array overlap. **Compute the rating average and the active-rider count in separate subqueries or lateral joins** — the query as written in TRD §4.1 joins `reviews` and `subscriptions` under one `GROUP BY`, producing a cartesian product that makes both aggregates wrong (see `plan.md` §10.11).
   - **Accept:** A driver with 3 reviews and 4 active subscriptions reports the true 3-review average and a rider count of 4; the GIST index is used (confirmed by `EXPLAIN`); `PENDING`, `REJECTED`, and `SUSPENDED` drivers never appear.
   - **Verify:** A regression test seeding exactly that 3×4 case and asserting the true values — it must fail against the TRD's original query. An `EXPLAIN ANALYZE` assertion that `idx_dp_route` is used rather than a sequential scan.
   - **Files:** `apps/matching/app/matching/candidates.py`, `apps/matching/tests/test_candidates.py`
   - **Skills:** doubt-driven-development, test-driven-development, performance-optimization
 
-- [ ] **T1.03 — Direction check, evaluated per leg** · `M` · deps: T1.02
+- [x] **T1.03 — Direction check, evaluated per leg** · `M` · deps: T1.02
   - **Do:** Project pickup and destination onto the polyline with `ST_ClosestPoint` + `ST_LineLocatePoint`. The outbound leg requires `pos_pickup < pos_dest`; the return leg requires the reverse (`pos_dest < pos_pickup`) against the same stored polyline. A `ROUND_TRIP` search must satisfy both legs. Per B1, decided 2026-08-23 — the literal TRD §4.1 Step 2 check applied to both legs makes every round-trip search return zero drivers.
   - **Accept:** An opposite-direction driver is excluded for a morning search; a `ROUND_TRIP` search on a valid corridor returns the same driver set as the equivalent morning search; pickup and destination projecting to the same position is excluded, not accepted; a driver eligible outbound but not on the return leg is excluded from `ROUND_TRIP` while still eligible for `MORNING`.
   - **Verify:** Tests for outbound match, reverse-direction exclusion, round-trip satisfying both legs, round-trip failing on the return leg only, and the degenerate same-position case. One test must fail under the literal TRD algorithm and pass under per-leg evaluation.
   - **Files:** `apps/matching/app/matching/direction.py`, `apps/matching/tests/test_direction.py`
   - **Skills:** doubt-driven-development, test-driven-development
-- [ ] **T1.04 — Capacity check and seat accounting** · `S` · deps: T1.02
+- [x] **T1.04 — Capacity check and seat accounting** · `S` · deps: T1.02
   - **Do:** Exclude a driver when `active_riders + 1 > seat_capacity`. Define the seat semantics explicitly: a `ROUND_TRIP` subscription occupies one seat, not two, and only `ACTIVE` subscriptions count — `PENDING` ones do not reserve a seat.
   - **Accept:** A driver at capacity is excluded; a driver with one free seat is included; a `PENDING` request does not consume the last seat (which is what makes the `T1.16` conflict lock necessary); `PAUSED` and `CANCELLED` subscriptions free their seat.
   - **Verify:** Tests at capacity, one below, and one with a pending request against the last seat.
   - **Files:** `apps/matching/app/matching/capacity.py`, `apps/matching/tests/test_capacity.py`
   - **Skills:** test-driven-development
-- [ ] **T1.05 — Timing conflict check and trip-duration estimation** · `M` · deps: T1.04, T-D.05
+- [x] **T1.05 — Timing conflict check and trip-duration estimation** · `M` · deps: T1.04, T-D.05
   - **Do:** Build the requested window as `[requestedTime − buffer, requestedTime + buffer + estimatedTripDuration]` and compare against `driver_schedule_slots` for the overlapping operating days. `estimatedTripDuration` is undefined in the TRD — implement it explicitly (Distance Matrix, with a haversine-plus-speed-factor fallback, cached). Apply whatever strictness B4 decided.
   - **Accept:** The estimator is deterministic for a given input and cached; a Maps failure falls back rather than failing the search; an exactly-adjacent slot is handled per the B4 decision, and the chosen behaviour is asserted; day-of-week overlap uses array intersection, not equality.
   - **Verify:** Tests for exact-boundary adjacency, full containment, partial overlap on one shared day, no shared days, and the Maps-unavailable fallback path.
   - **Files:** `apps/matching/app/matching/timing.py`, `apps/matching/app/maps/duration.py`, `apps/matching/tests/test_timing.py`
   - **Skills:** doubt-driven-development, test-driven-development, source-driven-development
-- [ ] **T1.06 — Composite scoring and deterministic ranking** · `M` · deps: T1.03, T1.05, T-D.06
+- [x] **T1.06 — Composite scoring and deterministic ranking** · `M` · deps: T1.03, T1.05, T-D.06
   - **Do:** Implement the five weighted signals from PRD §7.4 — proximity 40%, timing 25%, rating 20%, capacity headroom 10%, acceptance rate 5%. Normalise every component to 0–1. Add an explicit tie-break chain (score, then rating, then driver id) so ordering is stable. Cap results at 20.
   - **Accept:** Identical inputs always produce an identical ordering; every component is bounded 0–1 so no signal can dominate through scale; a driver with no reviews gets a defined neutral rating rather than a null-propagated score; the composite is auditable — the response carries the component breakdown.
   - **Verify:** Tests asserting stability across repeated runs and shuffled input order, each weight's isolated effect, the no-reviews case, and that the weights sum to 1.0.
   - **Files:** `apps/matching/app/matching/scoring.py`, `apps/matching/tests/test_scoring.py`
   - **Skills:** doubt-driven-development, test-driven-development
-- [ ] **T1.07 — Edge-case and property suite for the whole filter chain** · `M` · deps: T1.06
+- [x] **T1.07 — Edge-case and property suite for the whole filter chain** · `M` · deps: T1.06
   - **Do:** Adversarial cases: pickup exactly at `R_pickup`, a degenerate two-point polyline, a driver with `seat_capacity = 1`, a DST transition inside the requested window, midnight-crossing windows, an antimeridian-crossing route, identical pickup and destination, and a driver whose route doubles back on itself.
   - **Accept:** Every case has a documented expected outcome and a passing test; nothing raises an unhandled exception; matching-service coverage is at least 90% line and 85% branch.
   - **Verify:** `pytest --cov=app` meets the thresholds; the DST case is asserted against a real timezone, not UTC.
   - **Files:** `apps/matching/tests/test_edge_cases.py`, `apps/matching/tests/test_properties.py`
   - **Skills:** test-driven-development, doubt-driven-development
-- [ ] **T1.08 — `GET /drivers/search` gateway endpoint** · `M` · deps: T1.06, T0.29
+- [x] **T1.08 — `GET /drivers/search` gateway endpoint** · `M` · deps: T1.06, T0.29
   - **Do:** Validate all eight query parameters with the contracts schema, enforce rider ownership, proxy to the matching service with the trace context, cap at 30 requests/user/minute, and cache results in Redis for 2 minutes keyed on the normalised query. Map a matching-service outage to `503` with `Retry-After: 30`.
   - **Accept:** A missing parameter returns `400 MISSING_PARAMS`; an ungeocodable point returns `422 NO_ROUTE_FOUND`; a consumer cannot search on another consumer's `riderId`; the response carries `totalEligible` and `searchRadiusMetres`; zero results is `200` with an empty list, not `404`.
   - **Verify:** Integration tests per error code, the ownership rejection, the rate limit, a cache hit, and the `503` path with the matching service stopped.
   - **Files:** `apps/api/src/search/search.controller.ts`, `apps/api/src/search/matching.client.ts`, `apps/api/test/search.integration.test.ts`
   - **Skills:** api-and-interface-design, security-and-hardening, test-driven-development
 
-- [ ] **T1.09 — Matching performance harness and baseline** · `M` · deps: T1.08
+- [x] **T1.09 — Matching performance harness and baseline** · `M` · deps: T1.08
   - **Do:** Seed 500 approved drivers with realistic city polylines and 2,000 subscriptions. Measure end-to-end search latency with a fixed request count, record the baseline, and confirm the GIST index is used at that scale. Publish the numbers.
   - **Accept:** P50 under 120 ms and P99 under 400 ms per TRD §4.5, measured, not assumed; the plan shows an index scan; if the target is missed, the harness output is the input to a `performance-optimization` cycle before Phase 1B starts.
   - **Verify:** The harness runs in CI nightly and fails on a regression beyond run-to-run variance; baseline and any subsequent attempt recorded in `PERF.md`, reverted attempts included.
   - **Files:** `apps/matching/tests/perf/test_search_latency.py`, `apps/matching/tests/perf/seed_500.py`, `PERF.md`
   - **Skills:** performance-optimization, observability-and-instrumentation
-- [ ] **T1.10 — Daily precompute job for `acceptance_rate` and typical departure time** · `S` · deps: T0.12, T1.06
+- [x] **T1.10 — Daily precompute job for `acceptance_rate` and typical departure time** · `S` · deps: T0.12, T1.06
   - **Do:** A BullMQ repeatable job computing each driver's acceptance rate over a trailing window and their typical departure time from committed slots, writing both to `driver_profiles`. Both columns are read by scoring and neither exists in the TRD DDL.
   - **Accept:** A driver with no requests yet gets a defined neutral value rather than null; the job is idempotent within a day; a failure leaves the previous values intact rather than zeroing them.
   - **Verify:** Tests for the no-history case, idempotent re-run, and failure isolation; a scoring test asserting a stale value still produces a valid composite.
-  - **Files:** `apps/worker/src/driver-stats.job.ts`, `apps/worker/test/driver-stats.test.ts`
+  - **Files:** `apps/worker/src/driver-stats/driver-stats.job.ts`, `apps/worker/src/driver-stats/driver-stats.worker.ts`, `apps/worker/test/driver-stats.test.ts`
   - **Skills:** test-driven-development, observability-and-instrumentation
-- [ ] **T1.11 — Search input screen (mobile)** · `M` · deps: T1.08, T0.44
+- [x] **T1.11 — Search input screen (mobile)** · `M` · deps: T1.08, T0.44
   - **Do:** Rider selection, home and destination prefilled from the rider record with an override, a time picker, a day-of-week selector, and a subscription-type selector. Validate against the shared contracts schema before dispatching.
   - **Accept:** Defaults come from the selected rider so the common case is one tap; every invalid combination is blocked client-side with the same message the server would give; loading state is a skeleton, not a spinner over a blank screen.
   - **Verify:** Component tests for the defaults, validation blocks, and loading state; keyboard and screen-reader pass.
@@ -500,44 +506,45 @@ do not assume a default command.
 
 ## Phase 1B — Subscription Lifecycle (`subscriptions`, realistic: 2 weeks)
 
-- [ ] **T1.14 — Create a subscription request, idempotently** · `M` · deps: T1.08
-  - **Do:** `POST /subscriptions` creating a `PENDING` subscription. Honour the `Idempotency-Key` header by claiming it in a single atomic insert against the `idempotency_keys` unique constraint — never `SELECT` then `INSERT`. Store the request hash. Re-run the eligibility check server-side; never trust the client's claim that this driver matched.
-  - **Accept:** The same key with the same body replays the original response; the same key with a different body returns `422`; a second in-flight duplicate returns `409` (a deliberate choice, documented); key retention outlives the longest retry path; a driver who is no longer eligible is rejected at creation, not at acceptance.
-  - **Verify:** Tests for replay, payload mismatch, in-flight duplicate, and stale eligibility. A concurrency test firing two identical requests simultaneously and asserting exactly one subscription row.
-  - **Files:** `apps/api/src/subscriptions/subscriptions.controller.ts`, `apps/api/src/common/idempotency.service.ts`, `apps/api/test/subscription-create.integration.test.ts`
-  - **Skills:** api-and-interface-design, doubt-driven-development, test-driven-development
-- [ ] **T1.15 — Schedule-preview endpoint for the driver** · `S` · deps: T1.14
-  - **Do:** Return what the driver's roster would look like if they accepted: the merged slot list, the re-optimised pickup order, and any warning about tightness against committed windows. Read-only — it must not write slots.
-  - **Accept:** The preview is computed without mutating any row; it shows the delta against today's roster; it surfaces the same conflict verdict acceptance would reach, so a driver is never shown "no conflict" then refused.
-  - **Verify:** A test asserting zero writes during a preview; a test asserting the preview verdict matches the `T1.16` acceptance verdict for the same inputs.
-  - **Files:** `apps/api/src/subscriptions/preview.controller.ts`, `apps/api/test/subscription-preview.integration.test.ts`
-  - **Skills:** api-and-interface-design, test-driven-development
-- [ ] **T1.16 — Atomic acceptance with the SERIALIZABLE conflict lock** · `M` · deps: T1.15, T1.05
-  - **Do:** `POST /subscriptions/:id/accept` inside a `SERIALIZABLE` transaction: `SELECT … FOR UPDATE` on the driver's slots, re-check conflicts, then insert the slot and flip the subscription to `ACTIVE` — or roll back and return `409 RACE_CONFLICT`. Retry exactly once on serialisation failure (SQLSTATE `40001`), then surface the conflict.
-  - **Accept:** No path writes a slot outside the transaction; the retry is bounded at one; a driver who is now at capacity or in conflict is refused with the conflicting slot in `details`; only the owning driver can accept; accepting an already-`ACTIVE` or `CANCELLED` subscription is rejected.
-  - **Verify:** Failing-then-passing tests for each rejection. Then `T1.17`.
-  - **Files:** `apps/api/src/subscriptions/accept.service.ts`, `apps/api/test/subscription-accept.integration.test.ts`
-  - **Skills:** doubt-driven-development, security-and-hardening, test-driven-development
-- [ ] **T1.17 — Concurrency proof: no double-booking** · `S` · deps: T1.16
-  - **Do:** A test firing 50 concurrent acceptance requests against a driver with exactly one free seat, and a second variant with two overlapping-window requests against a driver with free capacity.
-  - **Accept:** Exactly one subscription becomes `ACTIVE` in the capacity case; exactly one in the overlapping-window case; every loser receives `409`, never a `500`; zero orphan slots; the driver's slot count matches their active-subscription count afterwards.
-  - **Verify:** The test runs in CI on every PR touching `subscriptions` or `driver_schedule_slots`, and is repeated 20 times in the nightly job to catch flakiness. An invariant assertion after each run: slot count equals active-subscription count.
-  - **Files:** `apps/api/test/subscription-concurrency.integration.test.ts`
-  - **Skills:** test-driven-development, doubt-driven-development
-- [ ] **T1.18 — Decline, and the 24-hour auto-decline job** · `S` · deps: T1.16
-  - **Do:** `POST /subscriptions/:id/decline` with a reason, plus a repeatable job that auto-declines any request still `PENDING` after 24 hours. Notify the consumer either way.
-  - **Accept:** Auto-decline is idempotent — running the job twice does not double-notify; the acceptance-rate calculation counts an auto-decline correctly per the definition in `T1.10`; the reason is sanitised and length-capped.
-  - **Verify:** Tests for manual decline, auto-decline at the boundary, double-run idempotency, and the notification firing exactly once.
-  - **Files:** `apps/api/src/subscriptions/decline.service.ts`, `apps/worker/src/auto-decline.job.ts`, `apps/api/test/subscription-decline.integration.test.ts`
-  - **Skills:** test-driven-development, api-and-interface-design
+- [ ] **T1.14 — Create a pending subscription request, idempotently** · `M` · deps: A1.08
+  - **Implementation:** [T1.13/T1.14 implementation, verification and rollout](T1.13-T1.14-progress.md); migration deployment and native verification remain pending.
+  - **Do:** POST /subscriptions validates rider ownership and current driver approval, coverage, offered days/legs and requestability. Create PENDING only; no seats, slots, runs or billing. Atomically claim Idempotency-Key with body hash and bounded retention; record requested terms and 24-hour deadline.
+  - **Accept:** A lower-ranked or distant-corridor driver can receive a request within their service area. Pending requests may coexist without reserving capacity. Same key/body replays; changed body returns 422; in-flight duplicate returns 409. Add explicit DECLINED outcome to planned contracts; no REQUESTED/ACCEPTED persisted aliases.
+  - **Verify:** Concurrent identical requests create one row; multiple distinct pending requests for one free seat may coexist; out-of-area direct requests and cross-owner riders fail; client ranking is not trusted.
+  - **Files:** Subscription controller/service, idempotency service, contract and integration tests (split schema work into A1.01/A1.02).
 
-- [ ] **T1.19 — TSP re-optimisation of the pickup order** · `M` · deps: T1.16
-  - **Do:** Nearest-neighbour for 8 stops or fewer; OR-Tools with guided local search and a hard 1-second limit for 9–15; fall back to the existing order if no solution is found. Apply the ±5-minute time-window constraint per committed pickup. Write `pickup_order` back inside the acceptance transaction so the roster and the order never diverge.
-  - **Accept:** No committed pickup window is violated by a re-optimisation — this is the invariant, and a solution that violates it is rejected in favour of the fallback; the 1-second cap is enforced; the order is written in the same transaction as the slot.
-  - **Verify:** Tests at 1, 8, 9, and 15 stops; a case where the optimal distance order would violate a window, asserting the window wins; a forced no-solution case asserting the fallback; a timing test asserting ≤8 stops completes under 10 ms and 9–15 under 200 ms.
-  - **Files:** `apps/matching/app/optimise/tsp.py`, `apps/matching/tests/test_tsp.py`
-  - **Skills:** doubt-driven-development, test-driven-development, source-driven-development, performance-optimization
+- [ ] **T1.15 — Read-only driver run-impact preview** · `M` · deps: T1.14, A1.10
+  - **Do:** Return a first-run or insertion proposal with pickup/destination, days/legs, nullable route distance, additional road travel, stops and committed-window impact. Include roster, availability, policy and estimate versions; never write slots.
+  - **Accept:** Same snapshot produces the same acceptance feasibility decision. Later roster changes may invalidate preview. Unknown/stale estimates return unavailable, not feasible. Do not disclose unrelated drivers' riders.
+  - **Verify:** Zero-write test; same-snapshot parity; stale proposal; first run; shared run; impossible arrival and return leg tests.
+  - **Files:** Preview controller/service, shared response schema, integration tests.
+
+- [ ] **T1.16 — Atomic driver acceptance and recurring run commit** · `M` · deps: T1.15, A1.02, A1.10
+  - **Do:** POST /subscriptions/:id/accept authorizes owning driver and transitions unexpired PENDING to ACTIVE. Compute proposal outside transaction; inside SERIALIZABLE lock stable driver and rider commitment rows in consistent order, revalidate request/roster/availability/estimate versions and all affected capacity/timing constraints, then commit run assignments, ordered stops, subscription, derived slots and outbox together.
+  - **Accept:** Empty rosters are serialized. Concurrent cross-driver acceptance cannot duplicate an incompatible rider commitment. At most three retries after the initial attempt for 40001 with jitter; exhaustion/stale proposal returns 409 RACE_CONFLICT. Missing timing evidence blocks acceptance. No external routing call under locks.
+  - **Verify:** Ownership/state/expiry failures, stale preview, first-run race, rollback/outbox consistency and bounded retry tests; then T1.17.
+  - **Files:** Acceptance service, run/slot transaction helpers, outbox integration and tests; split into focused increments before implementation.
+
+- [ ] **T1.17 — Concurrency proof for shared runs and first acceptance** · `M` · deps: T1.16
+  - **Do:** Race 50 acceptances for one remaining seat; race first acceptances on an empty roster; race incompatible and compatible shared-run requests and two drivers accepting the same rider's overlapping service.
+  - **Accept:** Only one wins the last seat/incompatible service; compatible requests may both succeed if capacity and windows allow. No orphan slots, duplicate rider commitments or partial round trips. Derived assignments match each active subscription's days/legs, not slot count equals subscription count.
+  - **Verify:** Repeat concurrency cases in CI/nightly; assert committed windows, per-run occupancy, slot reconstruction and outbox uniqueness after every run.
+  - **Files:** Subscription concurrency integration tests and fixture helpers.
+
+- [ ] **T1.18 — Decline, expiry and pending withdrawal** · `M` · deps: T1.14, T1.16
+  - **Do:** Driver decline sets DECLINED; deadline job sets EXPIRED after 24 hours; owning consumer may withdraw PENDING immediately to CANCELLED. Serialize terminal transitions against acceptance, store reasons, and emit outbox events.
+  - **Accept:** No pending outcome allocates/releases an active seat or charges money. Expired/withdrawn requests cannot be accepted. Retry cannot double-transition or notify. Acceptance-rate denominator counts accepted, manual decline and expiry outcomes once; excludes pending and withdrawn requests.
+  - **Verify:** Controlled-clock deadline test, acceptance/expiry and withdrawal races, authorization, repeat job and outcome statistics tests.
+  - **Files:** Decline/withdrawal service, expiry worker, contract and integration tests; split if needed.
+
+- [ ] **T1.19 — Bounded pickup/dropoff optimization** · `M` · deps: A1.10; used by T1.15 and T1.16
+  - **Do:** Refine insertion proposals with bounded optimization over pickups and dropoffs, preserving precedence and all committed windows. Compute outside the acceptance transaction; commit only the validated version through T1.16.
+  - **Accept:** No-solution/timeout never activates the new rider using an unverified existing order. Retain an existing-order insertion only if independently feasible. First-run, multiple destinations, transfer travel and both legs are supported within documented solver limits.
+  - **Verify:** Small/maximum-size runs, road-time fixtures, arrival deadlines, timeout, infeasible insertion and stale proposal cases; record bounded latency.
+  - **Files:** Matching optimizer and tests; shared proposal fixtures.
+
 - [ ] **T1.20 — Cancellation with 7-day notice** · `M` · deps: T1.16
+  - **Architecture amendment:** ADR-011: On effective cancellation, rebuild affected run assignments/stops and derived slots atomically; preserve remaining riders' commitments and invalidate proposals/caches. Pending withdrawal is T1.18, with no active-service notice period.
   - **Do:** `POST /subscriptions/:id/cancel` by either party, recording who cancelled, the reason, and the effective date 7 days out. Free the schedule slot and the seat on the effective date, not on request. Notify the other party.
   - **Accept:** The seat is not freed early, so trips inside the notice window still run; a cancellation already in flight cannot be re-requested; only the consumer who owns the rider or the driver who owns the roster may cancel; billing interaction is defined explicitly (no charge lands after the effective date).
   - **Verify:** Tests for both parties cancelling, an unauthorised third party, double cancellation, and the seat freeing exactly on the effective date via a controlled clock.
@@ -549,30 +556,29 @@ do not assume a default command.
   - **Verify:** Tests for pagination bounds, cross-tenant access rejection, and field-level exposure per role.
   - **Files:** `apps/api/src/subscriptions/query.controller.ts`, `apps/api/test/subscription-query.integration.test.ts`
   - **Skills:** api-and-interface-design, security-and-hardening
-- [ ] **T1.22 — Subscription request flow (mobile, consumer)** · `M` · deps: T1.13, T1.14
-  - **Do:** Pick subscription type, pickup time, and start date; show a review screen with the driver, schedule, and monthly price; submit with a client-generated `Idempotency-Key` reused across retries; then a pending state screen with the 24-hour expectation.
-  - **Accept:** The idempotency key is generated once per intent and reused on retry, never regenerated per attempt; a `409 CONFLICT_DETECTED` renders as an explanation plus a "find another driver" action; the pending screen states the deadline.
-  - **Verify:** A component test asserting a retried submit sends the same key; tests for the conflict and success paths; accessibility pass.
-  - **Files:** `apps/mobile-consumer/app/(app)/subscribe/*.tsx`, `packages/ui/src/api/idempotency.ts`
-  - **Skills:** frontend-ui-engineering, api-and-interface-design
-- [ ] **T1.23 — Request inbox and accept/decline (mobile, driver)** · `M` · deps: T1.15, T1.16, T1.18
-  - **Do:** A request list with time remaining, a detail screen showing the rider, addresses, schedule, and monthly earnings, the schedule-delta preview from `T1.15`, and accept/decline actions with a decline-reason sheet.
-  - **Accept:** The delta preview shows the before and after pickup order; the countdown reflects the real 24-hour deadline; a `409 RACE_CONFLICT` on accept renders as a clear "someone else took this slot" message and refreshes the list; the empty inbox state is informative.
-  - **Verify:** Component tests for the states including the race conflict; a Detox flow accepting a request end to end.
-  - **Files:** `apps/mobile-driver/app/(app)/requests/*.tsx`
-  - **Skills:** frontend-ui-engineering, test-driven-development
-- [ ] **T1.24 — Subscription lifecycle notifications** · `S` · deps: T1.16, T1.18, T1.20, T0.35
-  - **Do:** Push plus email for `SUBSCRIPTION_ACCEPTED`, `SUBSCRIPTION_DECLINED`, and `SUBSCRIPTION_CANCELLED`; push to the driver on a new request. Include the agreed schedule in the acceptance email.
-  - **Accept:** Every notification carries the deep-link data payload; the emails render correctly in a plain-text client; no notification contains a rider's home address in its preview text (it appears on a lock screen).
-  - **Verify:** Tests asserting each event enqueues exactly one job per recipient; a manual review of every rendered template for address leakage in the preview line.
-  - **Files:** `apps/api/src/notifications/templates/subscription.*`, `apps/api/test/subscription-notifications.integration.test.ts`
-  - **Skills:** observability-and-instrumentation, security-and-hardening
+- [ ] **T1.22 — Consumer send-request flow** · `M` · deps: T1.13, T1.14, T1.18
+  - **Do:** Review chosen driver, commute endpoints, all days/legs/times, start date and price; submit Send request with an idempotency key reused across retries. Display PENDING and response deadline; allow withdrawal and show declined/expired outcomes.
+  - **Accept:** No immediate activation or booking-confirmed copy. Lower-ranked candidates remain selectable. Null route distance is shown honestly. Known unavailability and review-required states have distinct copy.
+  - **Verify:** Retry-key, lower-ranked selection, route-free, out-of-area/stale availability, withdrawal and expiry component/device tests.
+  - **Files:** Consumer request screens, API hook/idempotency helper and tests.
+
+- [ ] **T1.23 — Driver inbox, route review and acceptance** · `M` · deps: T1.15, T1.16, T1.18
+  - **Do:** Display request details, route distance where available, before/after run stops, added travel, pickup/dropoff timing and earnings. Offer accept/decline after preview; refresh stale proposals.
+  - **Accept:** First consumer establishes a run. Existing riders' windows remain protected. Unknown feasibility cannot be accepted; distinguish stale state, full capacity and impossible timing. Countdown uses server deadline.
+  - **Verify:** Real-device first-run and second compatible-rider acceptance; stale preview, infeasible/unknown estimate, decline and expiry tests.
+  - **Files:** Driver request screens, preview API hook and tests.
+
+- [ ] **T1.24 — Committed request lifecycle notifications** · `M` · deps: T1.14, T1.16, T1.18, T1.20, T0.35
+  - **Do:** Dispatch outbox events for new request, acceptance, manual decline, expiry, pending withdrawal and effective cancellation. Include committed schedule in acceptance details; deep-link to role-authorized screens.
+  - **Accept:** Rolled-back transactions send nothing; commit-to-queue crashes recover; deduplicate per event/recipient. No child names, precise addresses/coordinates or other riders' schedules in push previews.
+  - **Verify:** Outbox recovery, duplicate delivery, race winner, rejected transaction and privacy-template tests.
+  - **Files:** Notification templates/outbox dispatcher and integration tests.
 
 ### ✅ Checkpoint 1-B — the core promise holds under concurrency
 
 - [ ] Discovery → request → accept works end to end on real devices, both roles
 - [ ] 50 concurrent acceptances on the last seat produce exactly one `ACTIVE` subscription, zero orphan slots
-- [ ] The preview verdict and the acceptance verdict always agree
+- [ ] Preview and acceptance agree for the same versioned snapshot; stale previews require revalidation
 - [ ] No TSP result violates a committed pickup window
 - [ ] Doubt-driven review completed on the conflict lock and the TSP window constraint
 - [ ] `code-simplification` pass over Phase 1A + 1B
@@ -582,12 +588,14 @@ do not assume a default command.
 ## Phase 1C — Trips and Live Tracking (`trips`, `realtime-tracking`, realistic: 3–4 weeks)
 
 - [ ] **T1.25 — Daily trip generation job** · `M` · deps: T1.16, T-D.06
+  - **Architecture amendment:** ADR-011: Generate from committed recurring runs by operating day/leg and attach each active rider assignment once; pending requests generate nothing. Test shared manifests, both legs and effective cancellations.
   - **Do:** A repeatable job materialising tomorrow's trips from active subscriptions crossed with operating days, respecting the city timezone. One row per `(subscriptionId, scheduledDate, type)`, guarded by the existing unique constraint. Skip subscriptions cancelled with an effective date on or before the target day.
   - **Accept:** Re-running the job for the same date creates nothing new; a non-operating day generates no trip; a `ROUND_TRIP` subscription generates exactly two trips; DST transitions do not shift or duplicate a day; the job is safe to run late (catch-up for a missed day).
   - **Verify:** Tests for idempotent re-run, non-operating day, round-trip pair, DST spring-forward and fall-back, and a catch-up run. A controlled clock, never `new Date()` in the logic.
   - **Files:** `apps/worker/src/trip-generation.job.ts`, `apps/worker/test/trip-generation.test.ts`
   - **Skills:** test-driven-development, doubt-driven-development
 - [ ] **T1.26 — Trip list and driver run list** · `S` · deps: T1.25
+  - **Architecture amendment:** ADR-011: Driver manifests use committed run version and ordered pickup/dropoff stops; grouping multiple riders is not a schedule conflict.
   - **Do:** Role-aware `GET /trips` filterable by date and status, and `GET /drivers/me/schedule` returning today's run ordered by `pickup_order` with each rider's name, address, phone, and notes. Cache the driver's list in Redis for 30 seconds, invalidated on any status change.
   - **Accept:** A consumer sees only their own riders' trips; the driver's list is in optimised order, not insertion order; the cache is invalidated on a status change so a driver never sees a stale "not picked up"; a rider's phone is exposed only to the driver assigned to them.
   - **Verify:** Tests for cross-tenant isolation, ordering, cache invalidation on transition, and phone-field exposure per role.

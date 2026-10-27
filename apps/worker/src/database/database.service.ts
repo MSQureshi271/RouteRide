@@ -26,6 +26,10 @@ export class WorkerDatabaseService implements OnModuleInit, OnModuleDestroy {
     return res.rows;
   }
 
+  async getClient(): Promise<pg.PoolClient> {
+    return this.pool.connect();
+  }
+
   async clearUserFcmToken(userId: string): Promise<void> {
     await this.query(
       `UPDATE users SET fcm_token = NULL, updated_at = NOW() WHERE id = $1`,

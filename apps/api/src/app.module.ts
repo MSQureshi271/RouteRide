@@ -30,6 +30,8 @@ import { NotificationModule } from "./notifications/notification.module.js";
 import { DriversModule } from "./drivers/drivers.module.js";
 import { ConsumersModule } from "./consumers/consumers.module.js";
 import { MapsModule } from "./maps/maps.module.js";
+import { SearchModule } from "./search/search.module.js";
+import { SubscriptionsModule } from "./subscriptions/subscriptions.module.js";
 
 @Module({
   imports: [
@@ -92,6 +94,8 @@ import { MapsModule } from "./maps/maps.module.js";
     DriversModule,
     ConsumersModule,
     MapsModule,
+    SearchModule,
+    SubscriptionsModule,
   ],
   providers: [
     // Global rate limit guard — applied to every request

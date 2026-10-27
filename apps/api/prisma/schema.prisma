@@ -52,13 +52,29 @@ enum VerifyTier {
   ELITE
 }
 
+enum ScheduleLegType {
+  MORNING
+  AFTERNOON
+}
+
 enum SubType {
   MORNING
   AFTERNOON
   ROUND_TRIP
 }
 
+enum DriverRouteState {
+  UNSET
+  ESTABLISHED
+}
+
+enum RunStopType {
+  PICKUP
+  DROPOFF
+}
+
 enum SubStatus {
+  DECLINED
   PENDING
   ACTIVE
   PAUSED
@@ -147,6 +163,8 @@ model DriverProfile {
   bankAccountRef  String?      @map("bank_account_ref")
   /// Pre-computed daily; T0.12 addition
   acceptanceRate  Decimal?     @map("acceptance_rate") @db.Decimal(5, 2)
+  acceptedRequestCount Int       @default(0) @map("accepted_request_count")
+  eligibleRequestCount Int       @default(0) @map("eligible_request_count")
   /// T0.12 addition
   typicalDepartureTime DateTime? @map("typical_departure_time") @db.Timestamptz
   createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
@@ -160,6 +178,9 @@ model DriverProfile {
   locationLogs    LocationLog[]
   payouts         DriverPayout[]
   subscriptions   Subscription[]
+  matchingStats   DriverMatchingStats[]
+  availability    DriverAvailability[]
+  recurringRuns   RecurringRun[]
 
   // Indexes
   // GIST index idx_dp_route is created in the postgis raw-DDL migration
@@ -237,28 +258,32 @@ model Subscription {
   riderId                 String    @map("rider_id") @db.Uuid
   driverProfileId         String    @map("driver_profile_id") @db.Uuid
   type                    SubType
-  agreedPickupTime        DateTime  @map("agreed_pickup_time") @db.Time
-  agreedDropoffTime       DateTime  @map("agreed_dropoff_time") @db.Time
+  agreedPickupTime        DateTime?  @map("agreed_pickup_time") @db.Time
+  agreedDropoffTime       DateTime?  @map("agreed_dropoff_time") @db.Time
   /// geography(POINT, 4326) — raw SQL only
   agreedPickupLocation    Unsupported("geography(Point,4326)")? @map("agreed_pickup_location")
   /// geography(POINT, 4326) — raw SQL only
   agreedDropoffLocation   Unsupported("geography(Point,4326)")? @map("agreed_dropoff_location")
-  pickupAddressText       String    @map("pickup_address_text")
-  dropoffAddressText      String    @map("dropoff_address_text")
+  pickupAddressText       String?    @map("pickup_address_text")
+  dropoffAddressText      String?    @map("dropoff_address_text")
   monthlyPriceCents       Int       @map("monthly_price_cents")
   currency                String    @default("PKR") @map("currency") @db.Char(3)
   status                  SubStatus @default(PENDING)
   startDate               DateTime  @map("start_date") @db.Date
-  nextBillingDate         DateTime  @map("next_billing_date") @db.Date
+  nextBillingDate         DateTime?  @map("next_billing_date") @db.Date
   stripeSubscriptionId    String?   @map("stripe_subscription_id")
   cancellationReason      String?   @map("cancellation_reason")
   createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
+  requestedTerms        Json? @map("requested_terms") @db.JsonB
+  responseDeadline      DateTime? @map("response_deadline") @db.Timestamptz
+
   // Relations
   rider         Rider         @relation(fields: [riderId], references: [id])
   driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id])
   scheduleSlots DriverScheduleSlot[]
+  runAssignments RunAssignment[]
   trips         Trip[]
   payments      Payment[]
   reviews       Review[]
@@ -266,6 +291,8 @@ model Subscription {
 
   @@index([driverProfileId, status], name: "idx_subs_driver_status")
   @@index([riderId], name: "idx_subs_rider")
+  @@index([status, responseDeadline], map: "idx_subs_response_deadline")
+  @@index([riderId, driverProfileId, status], map: "idx_subs_rider_driver_status")
   @@map("subscriptions")
 }
 
@@ -274,22 +301,41 @@ model Subscription {
 /// Derived conflict-detection cache — rebuilt transactionally on every roster change.
 /// DO NOT edit manually. Source of truth is the subscriptions table (ADR-009).
 model DriverScheduleSlot {
-  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  driverProfileId String   @map("driver_profile_id") @db.Uuid
-  subscriptionId  String   @map("subscription_id") @db.Uuid
-  slotStart       DateTime @map("slot_start") @db.Time
-  slotEnd         DateTime @map("slot_end") @db.Time
-  operatingDays   Int[]    @map("operating_days") @db.SmallInt
+  id              String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  driverProfileId String          @map("driver_profile_id") @db.Uuid
+  subscriptionId  String          @map("subscription_id") @db.Uuid
+  legType         ScheduleLegType @map("leg_type")
+  slotStart       DateTime        @map("slot_start") @db.Time
+  slotEnd         DateTime        @map("slot_end") @db.Time
+  operatingDays   Int[]           @map("operating_days") @db.SmallInt
   /// Position in optimised pickup run
-  pickupOrder     Int      @map("pickup_order") @db.SmallInt
+  pickupOrder     Int             @map("pickup_order") @db.SmallInt
 
   // Relations
   driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
   subscription  Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
-  @@unique([driverProfileId, subscriptionId])
+  @@unique([driverProfileId, subscriptionId, legType], name: "idx_dss_driver_sub_leg")
   @@index([driverProfileId, operatingDays], name: "idx_dss_driver_days")
   @@map("driver_schedule_slots")
+}
+
+// ─── Driver Matching Stats ───────────────────────────────────────────────────
+
+model DriverMatchingStats {
+  id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  driverProfileId      String    @map("driver_profile_id") @db.Uuid
+  operatingDay         Int       @map("operating_day") @db.SmallInt
+  typicalDepartureTime DateTime? @map("typical_departure_time") @db.Time
+  observationCount     Int       @default(0) @map("observation_count")
+  computedAt           DateTime  @default(now()) @map("computed_at") @db.Timestamptz
+
+  // Relations
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([driverProfileId, operatingDay], name: "uq_driver_matching_stats_day")
+  @@index([driverProfileId, operatingDay], name: "idx_dms_driver_day")
+  @@map("driver_matching_stats")
 }
 
 // ─── Trips ────────────────────────────────────────────────────────────────────
@@ -519,4 +565,67 @@ model SupportTicket {
   resolvedAt DateTime? @map("resolved_at") @db.Timestamptz
 
   @@map("support_tickets")
+}
+
+// ADR-011: declared availability and committed recurring runs.
+model DriverAvailability {
+  id String @id @default(uuid())
+  driverProfileId String @map("driver_profile_id")
+  operatingDay Int @map("operating_day")
+  legType ScheduleLegType @map("leg_type")
+  windowStart DateTime @map("window_start") @db.Time
+  windowEnd DateTime @map("window_end") @db.Time
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
+  @@unique([driverProfileId, operatingDay, legType], map: "uq_driver_availability_day_leg")
+  @@map("driver_availability")
+}
+
+model RecurringRun {
+  id String @id @default(uuid())
+  driverProfileId String @map("driver_profile_id")
+  operatingDay Int @map("operating_day")
+  legType ScheduleLegType @map("leg_type")
+  startsAt DateTime? @map("starts_at") @db.Time
+  endsAt DateTime? @map("ends_at") @db.Time
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  effectiveTo DateTime? @map("effective_to") @db.Date
+  seatCapacity Int @map("seat_capacity")
+  version Int @default(0)
+  needsReview Boolean @default(false) @map("needs_review")
+  driverProfile DriverProfile @relation(fields: [driverProfileId], references: [id])
+  assignments RunAssignment[]
+  @@index([driverProfileId, operatingDay, legType], map: "idx_runs_driver_day_leg")
+  @@map("recurring_runs")
+}
+
+model RunAssignment {
+  id String @id @default(uuid())
+  runId String @map("run_id")
+  subscriptionId String @map("subscription_id")
+  driverProfileId String @map("driver_profile_id")
+  legType ScheduleLegType @map("leg_type")
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  effectiveTo DateTime? @map("effective_to") @db.Date
+  needsReview Boolean @default(false) @map("needs_review")
+  run RecurringRun @relation(fields: [runId], references: [id])
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  stops RunStop[]
+  @@unique([runId, subscriptionId], map: "uq_run_subscription")
+  @@index([subscriptionId, legType], map: "idx_assignment_subscription_leg")
+  @@map("run_assignments")
+}
+
+model RunStop {
+  id String @id @default(uuid())
+  assignmentId String @map("assignment_id")
+  runId String @map("run_id")
+  stopType RunStopType @map("stop_type")
+  position Int
+  location Unsupported("geometry(Geometry,4326)") @map("location")
+  windowStart DateTime @map("window_start") @db.Time
+  windowEnd DateTime @map("window_end") @db.Time
+  assignment RunAssignment @relation(fields: [assignmentId], references: [id])
+  @@unique([runId, position], map: "uq_run_stop_position")
+  @@unique([assignmentId, stopType], map: "uq_assignment_stop_type")
+  @@map("run_stops")
 }

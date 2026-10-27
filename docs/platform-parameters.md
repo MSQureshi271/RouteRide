@@ -1,5 +1,26 @@
 # Platform Parameters — RouteRide MVP
 
+## Service-area and feasibility policy amendment
+
+[ADR-011](decisions/ADR-011-service-area-discovery-and-driver-acceptance.md) and [Phase 1A amendment](../tasks/PHASE1A-service-area-amendment.md) govern these implemented configuration boundaries. Road-time provider use remains disabled by default and acceptance awaits Phase 1B.
+
+- Driver service area, starting location, offered windows/legs and recurring commitments are driver-owned data, not global environment defaults. Do not backfill absent coverage to the whole city.
+- Existing pickup/destination matching radii become ranking normalization distances only; exceeding them must not prevent a request to an otherwise available driver.
+- Bump `MATCHING_CONFIG_VERSION` when deploying the new rules; cache entries also need roster/availability invalidation.
+- A1.09 supplies a bounded Google Routes v2 matrix adapter. Missing, malformed, stale or timed-out evidence cannot approve a proposal; there is no Haversine acceptance fallback. Verify provider access and operational policy before enabling it.
+- Keep 24-hour request expiry and three serialization retries after the initial attempt. Ranking retains neutral priors, including the documented route-free proximity fallback; these must have shared deterministic fixtures.
+
+| Key | Default | Units / validation |
+| --- | --- | --- |
+| `MATCHING_CONFIG_VERSION` | `2` | Nonempty policy revision; API and Python must agree. Bump when ranking/eligibility configuration changes. |
+| `MATCHING_ROAD_TIMES_ENABLED` | `false` | Explicit opt-in; enabled Python provider requires existing `GOOGLE_MAPS_API_KEY`. |
+| `MATCHING_ROAD_MAX_AGE_SECONDS` | `300` | Positive estimate freshness limit in seconds. |
+| `MATCHING_ROAD_TRAVEL_MULTIPLIER` | `1.2` | Finite multiplier >=1 applied to road travel time. |
+| `MATCHING_ROAD_STOP_SERVICE_SECONDS` | `60` | Nonnegative service duration at each stop, seconds. |
+| `MATCHING_ROAD_TIMEOUT_SECONDS` | `5` | Positive bounded provider/proposal time budget, seconds. |
+
+Policy changes alter road proposal policy versions. These settings are separate from the display-only duration cache. The Google adapter accepts up to 25 distinct point keys per matrix; requests exceeding this limit return unavailable evidence and require batching in future preview orchestration, never an unverified fallback.
+
 > **Purpose:** Every commercial and operational parameter that could be hardcoded as a literal is instead listed here with its environment variable name, its database-configurable row key (where applicable), its default value, and its valid range. This document drives the `.env.example` in `T0.07` and the `packages/config` validation schema.
 >
 > **Rule:** No business-logic literal in this list may appear in source code. Every value is read from `process.env` via the validated config loader or from a DB-configurable row at runtime.

@@ -1,5 +1,15 @@
 # SPEC: mobile-shell
 
+## Discovery and request flow (current)
+
+Scope delta: [B6](SPEC-DELTA-mvp.md) / [ADR-011](decisions/ADR-011-service-area-discovery-and-driver-acceptance.md). See [Phase 1A amendment](../tasks/PHASE1A-service-area-amendment.md), A1.04, T1.12/T1.13, and master tasks T1.22/T1.23.
+
+- Consumer search shows recommendations first and allows browsing all available drivers. Lower ranking or greater route distance never disables a request by itself.
+- Show estimated pickup-to-route distance with units, explicitly distinct from detour/ETA/live-driver distance. Show “No established route” when the distance is null; never render zero. Keep exact third-party rider locations out of public cards/maps.
+- Profile CTA is “Send request”. Review commute, all days/legs, start date and price, then show `PENDING` and the 24-hour response deadline. Explain that transport is confirmed only after driver acceptance. Support pending withdrawal, decline/expiry and retry without duplicate requests.
+- Driver onboarding supports declared area/availability without a route. Driver inbox shows requested pickup/destination, times, distance, proposed run changes, travel-time impact and affected commitments. Unavailable/stale feasibility blocks acceptance with a refresh/retry action; it does not masquerade as a full seat.
+- Verify route-free and established-driver flows, lower-ranked selection, null distance accessibility, stale preview, withdrawal/expiry and shared-run acceptance on devices.
+
 > **Module ID:** `mobile-shell`  
 > **Status:** Draft / Phase 0  
 > **Capability Map Reference:** `tasks/plan.md` §3 (`mobile-shell`)

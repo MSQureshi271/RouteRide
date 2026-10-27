@@ -1,0 +1,899 @@
+{
+  "version": "2.0.0",
+  "settings": [
+    {
+      "id": "route-free-with-both-legs",
+      "input": {
+        "serviceArea": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [67, 24.8],
+              [67.2, 24.8],
+              [67.2, 25],
+              [67, 25],
+              [67, 24.8]
+            ]
+          ]
+        },
+        "startingLocation": {
+          "type": "Point",
+          "coordinates": [67.01, 24.86]
+        },
+        "availability": [
+          {
+            "day": 1,
+            "startTime": "06:00",
+            "endTime": "10:00"
+          },
+          {
+            "day": 1,
+            "startTime": "13:00",
+            "endTime": "18:00"
+          }
+        ],
+        "acceptingRequests": true,
+        "routeState": "UNSET",
+        "routePolyline": null
+      },
+      "valid": true
+    },
+    {
+      "id": "established-route",
+      "input": {
+        "serviceArea": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [67, 24.8],
+              [67.2, 24.8],
+              [67.2, 25],
+              [67, 25],
+              [67, 24.8]
+            ]
+          ]
+        },
+        "startingLocation": {
+          "type": "Point",
+          "coordinates": [67.01, 24.86]
+        },
+        "availability": [
+          {
+            "day": 1,
+            "startTime": "06:00",
+            "endTime": "10:00"
+          },
+          {
+            "day": 1,
+            "startTime": "13:00",
+            "endTime": "18:00"
+          }
+        ],
+        "acceptingRequests": true,
+        "routeState": "ESTABLISHED",
+        "routePolyline": {
+          "type": "LineString",
+          "coordinates": [
+            [67.01, 24.86],
+            [67.11, 24.92]
+          ]
+        }
+      },
+      "valid": true
+    },
+    {
+      "id": "missing-established-geometry",
+      "input": {
+        "serviceArea": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [67, 24.8],
+              [67.2, 24.8],
+              [67.2, 25],
+              [67, 25],
+              [67, 24.8]
+            ]
+          ]
+        },
+        "startingLocation": {
+          "type": "Point",
+          "coordinates": [67.01, 24.86]
+        },
+        "availability": [
+          {
+            "day": 1,
+            "startTime": "06:00",
+            "endTime": "10:00"
+          },
+          {
+            "day": 1,
+            "startTime": "13:00",
+            "endTime": "18:00"
+          }
+        ],
+        "acceptingRequests": true,
+        "routeState": "ESTABLISHED",
+        "routePolyline": null
+      },
+      "valid": false
+    },
+    {
+      "id": "unset-with-geometry",
+      "input": {
+        "serviceArea": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [67, 24.8],
+              [67.2, 24.8],
+              [67.2, 25],
+              [67, 25],
+              [67, 24.8]
+            ]
+          ]
+        },
+        "startingLocation": {
+          "type": "Point",
+          "coordinates": [67.01, 24.86]
+        },
+        "availability": [
+          {
+            "day": 1,
+            "startTime": "06:00",
+            "endTime": "10:00"
+          },
+          {
+            "day": 1,
+            "startTime": "13:00",
+            "endTime": "18:00"
+          }
+        ],
+        "acceptingRequests": true,
+        "routeState": "UNSET",
+        "routePolyline": {
+          "type": "LineString",
+          "coordinates": [
+            [67.01, 24.86],
+            [67.11, 24.92]
+          ]
+        }
+      },
+      "valid": false
+    },
+    {
+      "id": "unclosed-polygon",
+      "input": {
+        "serviceArea": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [67, 24.8],
+              [67.2, 24.8],
+              [67.2, 25],
+              [67, 25]
+            ]
+          ]
+        },
+        "startingLocation": {
+          "type": "Point",
+          "coordinates": [67.01, 24.86]
+        },
+        "availability": [
+          {
+            "day": 1,
+            "startTime": "06:00",
+            "endTime": "10:00"
+          },
+          {
+            "day": 1,
+            "startTime": "13:00",
+            "endTime": "18:00"
+          }
+        ],
+        "acceptingRequests": true,
+        "routeState": "UNSET",
+        "routePolyline": null
+      },
+      "valid": false
+    },
+    {
+      "id": "degenerate-polygon",
+      "input": {
+        "serviceArea": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [67, 24],
+              [67, 24],
+              [67, 24],
+              [67, 24]
+            ]
+          ]
+        },
+        "startingLocation": {
+          "type": "Point",
+          "coordinates": [67.01, 24.86]
+        },
+        "availability": [
+          {
+            "day": 1,
+            "startTime": "06:00",
+            "endTime": "10:00"
+          },
+          {
+            "day": 1,
+            "startTime": "13:00",
+            "endTime": "18:00"
+          }
+        ],
+        "acceptingRequests": true,
+        "routeState": "UNSET",
+        "routePolyline": null
+      },
+      "valid": false
+    },
+    {
+      "id": "invalid-wgs84",
+      "input": {
+        "serviceArea": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [67, 24.8],
+              [67.2, 24.8],
+              [67.2, 25],
+              [67, 25],
+              [67, 24.8]
+            ]
+          ]
+        },
+        "startingLocation": {
+          "type": "Point",
+          "coordinates": [200, 24]
+        },
+        "availability": [
+          {
+            "day": 1,
+            "startTime": "06:00",
+            "endTime": "10:00"
+          },
+          {
+            "day": 1,
+            "startTime": "13:00",
+            "endTime": "18:00"
+          }
+        ],
+        "acceptingRequests": true,
+        "routeState": "UNSET",
+        "routePolyline": null
+      },
+      "valid": false
+    },
+    {
+      "id": "overnight-window",
+      "input": {
+        "serviceArea": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [67, 24.8],
+              [67.2, 24.8],
+              [67.2, 25],
+              [67, 25],
+              [67, 24.8]
+            ]
+          ]
+        },
+        "startingLocation": {
+          "type": "Point",
+          "coordinates": [67.01, 24.86]
+        },
+        "availability": [
+          {
+            "day": 1,
+            "startTime": "23:00",
+            "endTime": "01:00"
+          }
+        ],
+        "acceptingRequests": true,
+        "routeState": "UNSET",
+        "routePolyline": null
+      },
+      "valid": false
+    },
+    {
+      "id": "malformed-time",
+      "input": {
+        "serviceArea": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [67, 24.8],
+              [67.2, 24.8],
+              [67.2, 25],
+              [67, 25],
+              [67, 24.8]
+            ]
+          ]
+        },
+        "startingLocation": {
+          "type": "Point",
+          "coordinates": [67.01, 24.86]
+        },
+        "availability": [
+          {
+            "day": 1,
+            "startTime": "7:30",
+            "endTime": "10:00"
+          }
+        ],
+        "acceptingRequests": true,
+        "routeState": "UNSET",
+        "routePolyline": null
+      },
+      "valid": false
+    },
+    {
+      "id": "duplicate-day-leg",
+      "input": {
+        "serviceArea": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [67, 24.8],
+              [67.2, 24.8],
+              [67.2, 25],
+              [67, 25],
+              [67, 24.8]
+            ]
+          ]
+        },
+        "startingLocation": {
+          "type": "Point",
+          "coordinates": [67.01, 24.86]
+        },
+        "availability": [
+          {
+            "day": 1,
+            "startTime": "06:00",
+            "endTime": "10:00"
+          },
+          {
+            "day": 1,
+            "startTime": "06:00",
+            "endTime": "10:00"
+          }
+        ],
+        "acceptingRequests": true,
+        "routeState": "UNSET",
+        "routePolyline": null
+      },
+      "valid": false
+    }
+  ],
+  "discoveryRequests": [
+    {
+      "id": "morning",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "pickupLat": 24.86,
+        "pickupLng": 67.01,
+        "destLat": 24.92,
+        "destLng": 67.11,
+        "day": 1,
+        "subscriptionType": "ONE_WAY",
+        "page": 1,
+        "pageSize": 20,
+        "departureTime": "07:30"
+      },
+      "valid": true
+    },
+    {
+      "id": "afternoon",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "pickupLat": 24.86,
+        "pickupLng": 67.01,
+        "destLat": 24.92,
+        "destLng": 67.11,
+        "day": 1,
+        "subscriptionType": "ONE_WAY",
+        "page": 1,
+        "pageSize": 20,
+        "departureTime": "14:00"
+      },
+      "valid": true
+    },
+    {
+      "id": "round-trip",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "pickupLat": 24.86,
+        "pickupLng": 67.01,
+        "destLat": 24.92,
+        "destLng": 67.11,
+        "day": 1,
+        "subscriptionType": "ROUND_TRIP",
+        "page": 1,
+        "pageSize": 20,
+        "departureTime": "07:30",
+        "pickupTime": "14:00"
+      },
+      "valid": true
+    },
+    {
+      "id": "missing-return",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "pickupLat": 24.86,
+        "pickupLng": 67.01,
+        "destLat": 24.92,
+        "destLng": 67.11,
+        "day": 1,
+        "subscriptionType": "ROUND_TRIP",
+        "page": 1,
+        "pageSize": 20,
+        "departureTime": "07:30"
+      },
+      "valid": false
+    },
+    {
+      "id": "return-before-outbound",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "pickupLat": 24.86,
+        "pickupLng": 67.01,
+        "destLat": 24.92,
+        "destLng": 67.11,
+        "day": 1,
+        "subscriptionType": "ROUND_TRIP",
+        "page": 1,
+        "pageSize": 20,
+        "departureTime": "07:30",
+        "pickupTime": "07:00"
+      },
+      "valid": false
+    },
+    {
+      "id": "unrelated-return",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "pickupLat": 24.86,
+        "pickupLng": 67.01,
+        "destLat": 24.92,
+        "destLng": 67.11,
+        "day": 1,
+        "subscriptionType": "ONE_WAY",
+        "page": 1,
+        "pageSize": 20,
+        "departureTime": "07:30",
+        "pickupTime": "14:00"
+      },
+      "valid": false
+    },
+    {
+      "id": "invalid-page",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "pickupLat": 24.86,
+        "pickupLng": 67.01,
+        "destLat": 24.92,
+        "destLng": 67.11,
+        "day": 1,
+        "subscriptionType": "ONE_WAY",
+        "page": 0,
+        "pageSize": 20,
+        "departureTime": "07:30"
+      },
+      "valid": false
+    },
+    {
+      "id": "oversize-page",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "pickupLat": 24.86,
+        "pickupLng": 67.01,
+        "destLat": 24.92,
+        "destLng": 67.11,
+        "day": 1,
+        "subscriptionType": "ONE_WAY",
+        "page": 1,
+        "pageSize": 101,
+        "departureTime": "07:30"
+      },
+      "valid": false
+    }
+  ],
+  "candidates": [
+    {
+      "id": "route-free-null-distance",
+      "input": {
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "routeState": "UNSET",
+        "pickupDistanceMeters": null,
+        "destDistanceMeters": null,
+        "availableSeats": 3,
+        "availabilityStatus": "AVAILABLE",
+        "reviewStatus": "REQUIRED",
+        "avgRating": null,
+        "reviewCount": 0,
+        "compositeScore": 0.5,
+        "scoreBreakdown": {
+          "proximityScore": 0.5,
+          "timingScore": 0.5,
+          "ratingScore": 0.5,
+          "capacityScore": 0.5,
+          "acceptanceScore": 0.5
+        }
+      },
+      "valid": true
+    },
+    {
+      "id": "established-geographic-distance",
+      "input": {
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "routeState": "ESTABLISHED",
+        "pickupDistanceMeters": 250,
+        "destDistanceMeters": 350,
+        "availableSeats": 3,
+        "availabilityStatus": "AVAILABLE",
+        "reviewStatus": "REQUIRED",
+        "avgRating": null,
+        "reviewCount": 0,
+        "compositeScore": 0.5,
+        "scoreBreakdown": {
+          "proximityScore": 0.5,
+          "timingScore": 0.5,
+          "ratingScore": 0.5,
+          "capacityScore": 0.5,
+          "acceptanceScore": 0.5
+        }
+      },
+      "valid": true
+    },
+    {
+      "id": "route-free-zero-is-not-null",
+      "input": {
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "routeState": "UNSET",
+        "pickupDistanceMeters": 0,
+        "destDistanceMeters": null,
+        "availableSeats": 3,
+        "availabilityStatus": "AVAILABLE",
+        "reviewStatus": "REQUIRED",
+        "avgRating": null,
+        "reviewCount": 0,
+        "compositeScore": 0.5,
+        "scoreBreakdown": {
+          "proximityScore": 0.5,
+          "timingScore": 0.5,
+          "ratingScore": 0.5,
+          "capacityScore": 0.5,
+          "acceptanceScore": 0.5
+        }
+      },
+      "valid": false
+    },
+    {
+      "id": "established-missing-distance",
+      "input": {
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "routeState": "ESTABLISHED",
+        "pickupDistanceMeters": null,
+        "destDistanceMeters": null,
+        "availableSeats": 3,
+        "availabilityStatus": "AVAILABLE",
+        "reviewStatus": "REQUIRED",
+        "avgRating": null,
+        "reviewCount": 0,
+        "compositeScore": 0.5,
+        "scoreBreakdown": {
+          "proximityScore": 0.5,
+          "timingScore": 0.5,
+          "ratingScore": 0.5,
+          "capacityScore": 0.5,
+          "acceptanceScore": 0.5
+        }
+      },
+      "valid": false
+    }
+  ],
+  "proposals": [
+    {
+      "id": "first-run-feasible",
+      "input": {
+        "version": "v2",
+        "requestId": "550e8400-e29b-41d4-a716-446655440000",
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "rosterVersion": 0,
+        "availabilityVersion": 1,
+        "policyVersion": "service-area-v2",
+        "estimateVersion": "road-v1",
+        "estimatedAt": "2026-10-21T01:00:00.000Z",
+        "expiresAt": "2026-10-21T01:05:00.000Z",
+        "status": "FEASIBLE",
+        "reason": null,
+        "assignments": [
+          {
+            "day": 1,
+            "legType": "DEPARTURE",
+            "runId": null,
+            "orderedStopIds": [
+              "550e8400-e29b-41d4-a716-446655440000",
+              "550e8400-e29b-41d4-a716-446655440001"
+            ]
+          }
+        ]
+      },
+      "valid": true
+    },
+    {
+      "id": "unknown-missing-estimate",
+      "input": {
+        "version": "v2",
+        "requestId": "550e8400-e29b-41d4-a716-446655440000",
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "rosterVersion": 0,
+        "availabilityVersion": 1,
+        "policyVersion": "service-area-v2",
+        "estimateVersion": "road-v1",
+        "estimatedAt": "2026-10-21T01:00:00.000Z",
+        "expiresAt": "2026-10-21T01:05:00.000Z",
+        "status": "UNKNOWN",
+        "reason": "MISSING_ESTIMATE",
+        "assignments": []
+      },
+      "valid": true
+    },
+    {
+      "id": "infeasible-capacity",
+      "input": {
+        "version": "v2",
+        "requestId": "550e8400-e29b-41d4-a716-446655440000",
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "rosterVersion": 0,
+        "availabilityVersion": 1,
+        "policyVersion": "service-area-v2",
+        "estimateVersion": "road-v1",
+        "estimatedAt": "2026-10-21T01:00:00.000Z",
+        "expiresAt": "2026-10-21T01:05:00.000Z",
+        "status": "INFEASIBLE",
+        "reason": "CAPACITY",
+        "assignments": []
+      },
+      "valid": true
+    },
+    {
+      "id": "unknown-cannot-approve",
+      "input": {
+        "version": "v2",
+        "requestId": "550e8400-e29b-41d4-a716-446655440000",
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "rosterVersion": 0,
+        "availabilityVersion": 1,
+        "policyVersion": "service-area-v2",
+        "estimateVersion": "road-v1",
+        "estimatedAt": "2026-10-21T01:00:00.000Z",
+        "expiresAt": "2026-10-21T01:05:00.000Z",
+        "status": "UNKNOWN",
+        "reason": "MISSING_ESTIMATE",
+        "assignments": [
+          {
+            "day": 1,
+            "legType": "DEPARTURE",
+            "runId": null,
+            "orderedStopIds": [
+              "550e8400-e29b-41d4-a716-446655440000",
+              "550e8400-e29b-41d4-a716-446655440001"
+            ]
+          }
+        ]
+      },
+      "valid": false
+    },
+    {
+      "id": "expired-evidence",
+      "input": {
+        "version": "v2",
+        "requestId": "550e8400-e29b-41d4-a716-446655440000",
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "rosterVersion": 0,
+        "availabilityVersion": 1,
+        "policyVersion": "service-area-v2",
+        "estimateVersion": "road-v1",
+        "estimatedAt": "2026-10-21T01:00:00.000Z",
+        "expiresAt": "2026-10-21T00:59:00.000Z",
+        "status": "FEASIBLE",
+        "reason": null,
+        "assignments": [
+          {
+            "day": 1,
+            "legType": "DEPARTURE",
+            "runId": null,
+            "orderedStopIds": [
+              "550e8400-e29b-41d4-a716-446655440000",
+              "550e8400-e29b-41d4-a716-446655440001"
+            ]
+          }
+        ]
+      },
+      "valid": false
+    }
+  ],
+  "subscriptionRequests": [
+    {
+      "id": "morning-request",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "ONE_WAY",
+        "operatingDays": [1, 2, 3],
+        "legs": [
+          {
+            "legType": "DEPARTURE",
+            "pickupLocation": {
+              "type": "Point",
+              "coordinates": [67.01, 24.86]
+            },
+            "dropoffLocation": {
+              "type": "Point",
+              "coordinates": [67.11, 24.92]
+            },
+            "pickupWindowStart": "07:00",
+            "pickupWindowEnd": "07:15",
+            "arrivalDeadline": "08:00"
+          }
+        ],
+        "startDate": "2026-11-01"
+      },
+      "valid": true
+    },
+    {
+      "id": "round-trip-request",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "ROUND_TRIP",
+        "operatingDays": [1, 2, 3],
+        "legs": [
+          {
+            "legType": "DEPARTURE",
+            "pickupLocation": {
+              "type": "Point",
+              "coordinates": [67.01, 24.86]
+            },
+            "dropoffLocation": {
+              "type": "Point",
+              "coordinates": [67.11, 24.92]
+            },
+            "pickupWindowStart": "07:00",
+            "pickupWindowEnd": "07:15",
+            "arrivalDeadline": "08:00"
+          },
+          {
+            "legType": "PICKUP",
+            "pickupLocation": {
+              "type": "Point",
+              "coordinates": [67.01, 24.86]
+            },
+            "dropoffLocation": {
+              "type": "Point",
+              "coordinates": [67.11, 24.92]
+            },
+            "pickupWindowStart": "14:00",
+            "pickupWindowEnd": "14:15",
+            "arrivalDeadline": "15:00"
+          }
+        ],
+        "startDate": "2026-11-01"
+      },
+      "valid": true
+    },
+    {
+      "id": "partial-roundtrip",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "ROUND_TRIP",
+        "operatingDays": [1, 2, 3],
+        "legs": [
+          {
+            "legType": "DEPARTURE",
+            "pickupLocation": {
+              "type": "Point",
+              "coordinates": [67.01, 24.86]
+            },
+            "dropoffLocation": {
+              "type": "Point",
+              "coordinates": [67.11, 24.92]
+            },
+            "pickupWindowStart": "07:00",
+            "pickupWindowEnd": "07:15",
+            "arrivalDeadline": "08:00"
+          }
+        ],
+        "startDate": "2026-11-01"
+      },
+      "valid": false
+    },
+    {
+      "id": "duplicate-days",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "ONE_WAY",
+        "operatingDays": [1, 1],
+        "legs": [
+          {
+            "legType": "DEPARTURE",
+            "pickupLocation": {
+              "type": "Point",
+              "coordinates": [67.01, 24.86]
+            },
+            "dropoffLocation": {
+              "type": "Point",
+              "coordinates": [67.11, 24.92]
+            },
+            "pickupWindowStart": "07:00",
+            "pickupWindowEnd": "07:15",
+            "arrivalDeadline": "08:00"
+          }
+        ],
+        "startDate": "2026-11-01"
+      },
+      "valid": false
+    },
+    {
+      "id": "deadline-before-pickup",
+      "input": {
+        "riderId": "550e8400-e29b-41d4-a716-446655440000",
+        "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "ONE_WAY",
+        "operatingDays": [1, 2, 3],
+        "legs": [
+          {
+            "legType": "DEPARTURE",
+            "pickupLocation": {
+              "type": "Point",
+              "coordinates": [67.01, 24.86]
+            },
+            "dropoffLocation": {
+              "type": "Point",
+              "coordinates": [67.11, 24.92]
+            },
+            "pickupWindowStart": "07:00",
+            "pickupWindowEnd": "07:15",
+            "arrivalDeadline": "06:00"
+          }
+        ],
+        "startDate": "2026-11-01"
+      },
+      "valid": false
+    }
+  ],
+  "lifecycleOutcomes": [
+    "PENDING",
+    "ACTIVE",
+    "DECLINED",
+    "EXPIRED",
+    "CANCELLED"
+  ],
+  "publicResult": {
+    "driverProfileId": "550e8400-e29b-41d4-a716-446655440000",
+    "routeState": "UNSET",
+    "pickupDistanceMeters": null,
+    "destDistanceMeters": null,
+    "availableSeats": 3,
+    "availabilityStatus": "AVAILABLE",
+    "reviewStatus": "REQUIRED",
+    "avgRating": null,
+    "reviewCount": 0,
+    "driverName": "Example Driver",
+    "vehicleMake": "Toyota",
+    "vehicleModel": "HiAce",
+    "vehicleColour": "White",
+    "monthlyPriceCents": 1500000,
+    "currency": "PKR"
+  }
+}

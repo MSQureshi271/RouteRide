@@ -1,5 +1,9 @@
 # Data Privacy Register — RouteRide MVP
 
+## Service-area discovery amendment
+
+[ADR-011](decisions/ADR-011-service-area-discovery-and-driver-acceptance.md) adds declared coverage, driver start locations, recurring run stops, and versioned feasibility proposals. Treat precise start/stop coordinates and rider schedules as restricted personal data. Consumer discovery receives distance summaries and route state, not other riders' stops or the driver's private starting location. Only the addressed driver and owning consumer may access their pending request; driver previews may include that driver's existing roster. Do not send rider identifiers/names to routing providers when coordinates suffice. Include request/proposal/run records in existing retention and deletion procedures, and apply existing log redaction and notification privacy rules.
+
 > **Purpose:** Classify every field in the TRD v1.0 schema as Non-Personal / Personal / Sensitive. Assign a stated purpose, retention period, and deletion path to every personal or sensitive field. This register drives `T1.61` (GDPR/CCPA export and deletion) and must be walked against the migration-v1 schema field by field before Checkpoint D closes.
 >
 > **Classification:**
@@ -95,6 +99,19 @@
 | `end_date` | NP | Financial record | ACTIVE + 7 years | Retain for audit |
 | `cancellation_reason` | P | May contain user-typed text; could be personal | ACTIVE + 7 years | Anonymise after account deletion; keep for financial audit |
 | `created_at` | NP | Audit | ACTIVE + 7 years | Retain for audit |
+
+`subscriptions.requested_terms` contains sensitive rider coordinates and schedules
+used to review the requested commute. Apply the parent subscription's access,
+export and deletion rules to this JSON snapshot as well as the original rider
+record; precise locations must not be exposed through public profiles or logs.
+`response_deadline` records the pending-request response window and follows the
+parent record's lifecycle. New pending requests leave agreed service and billing
+fields unset.
+
+Subscription-request idempotency responses contain the same sensitive snapshot.
+Their replay window is 24 hours; the endpoint deletes up to 100 expired entries
+from its own namespace on subsequent request traffic. Include these cached
+responses in account-erasure procedures; expiry does not replace erasure.
 
 **Note:** Financial records have a 7-year retention minimum in most jurisdictions. Personal fields within financial records are anonymised (name replaced with "Deleted User {hash}") rather than purged after account deletion. The financial record structure is retained.
 

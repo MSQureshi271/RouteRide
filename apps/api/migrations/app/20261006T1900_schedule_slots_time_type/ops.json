@@ -1,0 +1,23 @@
+[
+  {
+    "id": "app.schedule-slots-time",
+    "label": "Normalize schedule-slot times to local wall-clock values",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "driver_schedule_slots"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Apply the reviewed legacy SQL migration",
+        "sql": "-- ═══════════════════════════════════════════════════════════════════════════════\n-- RouteRide Phase 1A Task 1.04 Migration: Schedule Slots TIME Type Alignment\n--\n-- Aligns driver_schedule_slots.slot_start and slot_end with ADR-007 and Prisma\n-- schema (@db.Time).\n-- Converts existing timestamptz values to TIME WITHOUT TIME ZONE normalized\n-- explicitly to Asia/Karachi (UTC+5).\n-- ═══════════════════════════════════════════════════════════════════════════════\n\n\nALTER TABLE driver_schedule_slots\n  ALTER COLUMN slot_start TYPE TIME WITHOUT TIME ZONE USING (slot_start AT TIME ZONE 'Asia/Karachi')::time,\n  ALTER COLUMN slot_end TYPE TIME WITHOUT TIME ZONE USING (slot_end AT TIME ZONE 'Asia/Karachi')::time;\n\n"
+      }
+    ],
+    "postcheck": []
+  }
+]

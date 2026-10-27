@@ -4,24 +4,46 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import {
   Button,
+  Card,
   useAuthStore,
   colors,
   spacing,
   typography,
 } from "@routeride/ui";
+import { ScreenHeader } from "../../src/components/common/ScreenHeader";
 
 export default function ConsumerHomeScreen() {
   const { user, logout } = useAuthStore();
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
-        <Text style={styles.title}>RouteRide Passenger</Text>
+    <View style={styles.root}>
+      <ScreenHeader title="RouteRide" testID="home-header" />
+      <SafeAreaView style={styles.safe} edges={["bottom"]}>
+        <View style={styles.container}>
+          <Text style={styles.title}>RouteRide Passenger</Text>
         <Text style={styles.subtitle}>
           Logged in as: {user?.fullName || user?.phone || "Passenger"}
         </Text>
+
+        <Card style={styles.searchCard}>
+          <Text style={styles.searchTitle}>Daily Commute Matching</Text>
+          <Text style={styles.searchSubtitle}>
+            Find trusted, background-checked recurring drivers for school or office routes.
+          </Text>
+          <Button
+            variant="primary"
+            role="consumer"
+            onPress={() => router.push("/(app)/search" as never)}
+            accessibilityLabel="Search Routes and Find Drivers"
+            testID="search-drivers-button"
+            style={styles.searchBtn}
+          >
+            Find Drivers
+          </Button>
+        </Card>
 
         <Button
           variant="secondary"
@@ -33,12 +55,14 @@ export default function ConsumerHomeScreen() {
           Log out
         </Button>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1 },
   container: {
     flex: 1,
     padding: spacing.base,
@@ -54,8 +78,31 @@ const styles = StyleSheet.create({
     ...typography.bodyMd,
     color: colors.onSurfaceVariant,
   },
+  searchCard: {
+    alignSelf: "stretch",
+    padding: spacing.base,
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderColor: colors.outlineVariant,
+    marginVertical: spacing.sm,
+  },
+  searchTitle: {
+    ...typography.headlineMd,
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.onSurface,
+  },
+  searchSubtitle: {
+    ...typography.bodyMd,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.onSurfaceVariant,
+  },
+  searchBtn: {
+    marginTop: spacing.xs,
+  },
   logoutBtn: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     alignSelf: "stretch",
   },
 });

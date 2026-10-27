@@ -232,4 +232,139 @@ describe("Contracts Schema Validation (TRD §5 DTOs)", () => {
       expect(result.success).toBe(true);
     });
   });
+
+  describe("Internal Matching Contracts & Eligibility Vectors (AD-5, AD-11)", () => {
+    it("validates a well-formed InternalSearchRequest", async () => {
+      const { InternalSearchRequestSchema } = await import("./index.js");
+      const valid = {
+        riderId: "550e8400-e29b-41d4-a716-446655440000",
+        pickupLat: 24.86,
+        pickupLng: 67.01,
+        destLat: 24.92,
+        destLng: 67.11,
+        day: 1,
+        departureTime: "07:30",
+        subscriptionType: "ONE_WAY",
+        pickupRadiusMeters: 1500,
+        destRadiusMeters: 2000,
+      };
+      const result = InternalSearchRequestSchema.safeParse(valid);
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects ROUND_TRIP InternalSearchRequest without pickupTime", async () => {
+      const { InternalSearchRequestSchema } = await import("./index.js");
+      const invalid = {
+        riderId: "550e8400-e29b-41d4-a716-446655440000",
+        pickupLat: 24.86,
+        pickupLng: 67.01,
+        destLat: 24.92,
+        destLng: 67.11,
+        day: 1,
+        departureTime: "07:30",
+        subscriptionType: "ROUND_TRIP",
+      };
+      const result = InternalSearchRequestSchema.safeParse(invalid);
+      expect(result.success).toBe(false);
+    });
+
+    it("loads and validates the shared test vectors file", async () => {
+      const { ExclusionCodeSchema } = await import("./index.js");
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+
+      const vectorPath = path.resolve(__dirname, "../test-vectors/eligibility.json");
+      expect(fs.existsSync(vectorPath)).toBe(true);
+
+      const content = JSON.parse(fs.readFileSync(vectorPath, "utf-8"));
+      expect(content.version).toBe("1.0.0");
+      expect(Array.isArray(content.vectors)).toBe(true);
+      expect(content.vectors.length).toBeGreaterThanOrEqual(10);
+
+      const seenStages = new Set<string>();
+      for (const vector of content.vectors) {
+        expect(vector.id).toBeDefined();
+        expect(vector.stage).toBeDefined();
+        seenStages.add(vector.stage);
+
+        if (vector.expectedExclusionCode) {
+          const parsedCode = ExclusionCodeSchema.safeParse(vector.expectedExclusionCode);
+          expect(parsedCode.success).toBe(true);
+        }
+      }
+
+      // Assert all canonical stages E1-E7 plus ELIGIBLE are present
+      for (let i = 1; i <= 7; i++) {
+        expect(seenStages.has(`E${i}`)).toBe(true);
+      }
+      expect(seenStages.has("ELIGIBLE")).toBe(true);
+    });
+
+    it("validates and coerces DriverSearchQuerySchema", async () => {
+      const { DriverSearchQuerySchema } = await import("./index.js");
+      const query = {
+        riderId: "550e8400-e29b-41d4-a716-446655440000",
+        pickupLat: "24.860000",
+        pickupLng: "67.010000",
+        destLat: "24.920000",
+        destLng: "67.110000",
+        day: "1",
+        departureTime: "07:30",
+        subscriptionType: "ONE_WAY",
+      };
+      const parsed = DriverSearchQuerySchema.safeParse(query);
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.pickupLat).toBe(24.86);
+        expect(parsed.data.day).toBe(1);
+      }
+    });
+
+    it("rejects ROUND_TRIP DriverSearchQuery without pickupTime", async () => {
+      const { DriverSearchQuerySchema } = await import("./index.js");
+      const invalid = {
+        riderId: "550e8400-e29b-41d4-a716-446655440000",
+        day: 2,
+        departureTime: "08:00",
+        subscriptionType: "ROUND_TRIP",
+      };
+      const result = DriverSearchQuerySchema.safeParse(invalid);
+      expect(result.success).toBe(false);
+    });
+
+    it("validates well-formed DriverSearchResponseDataSchema and envelope", async () => {
+      const { DriverSearchResponseSchema } = await import("./index.js");
+      const payload = {
+        data: {
+          results: [
+            {
+              driverProfileId: "550e8400-e29b-41d4-a716-446655440000",
+              driverName: "Ahmed Khan",
+              driverRating: 4.8,
+              vehicleMake: "Toyota",
+              vehicleModel: "HiAce",
+              vehicleColour: "White",
+              monthlyPriceCents: 1500000,
+              currency: "PKR",
+              pickupWalkDistanceMeters: 250.5,
+              dropoffWalkDistanceMeters: 310.2,
+              estimatedPickupTime: "07:35",
+              estimatedDropoffTime: "08:15",
+              availableSeats: 3,
+              matchScore: 0.895,
+            },
+          ],
+          count: 1,
+          totalEligible: 1,
+          searchRadiusMetres: 1500,
+        },
+        meta: {
+          requestId: "req-12345",
+          timestamp: "2026-10-08T12:00:00.000Z",
+        },
+      };
+      const result = DriverSearchResponseSchema.safeParse(payload);
+      expect(result.success).toBe(true);
+    });
+  });
 });

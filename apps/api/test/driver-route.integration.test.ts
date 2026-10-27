@@ -50,10 +50,12 @@ const MOCK_PROFILE_ROW = {
   updated_at: new Date("2026-01-01T00:00:00Z"),
 };
 
-function makeMockPrisma(profileExists = true) {
-  return {
+function makeMockPrisma(profileExists = true, geometryValid = true) {
+  const mock = {
     sql: jest.fn().mockImplementation((strings: TemplateStringsArray) => {
       const query = strings.join(" ");
+      if (query.includes("AS valid"))
+        return Promise.resolve([{ valid: geometryValid }]);
       if (query.includes("SELECT") && query.includes("FROM driver_profiles")) {
         return Promise.resolve(profileExists ? [MOCK_PROFILE_ROW] : []);
       }
@@ -62,10 +64,33 @@ function makeMockPrisma(profileExists = true) {
       }
       return Promise.resolve([]);
     }),
+  };
+  return {
+    ...mock,
+    pool: {
+      connect: async () => ({
+        query: async (text: string) => ({
+          rows: await mock.sql([text] as unknown as TemplateStringsArray),
+        }),
+        release: jest.fn(),
+      }),
+    },
   } as unknown as PrismaService;
 }
 
 describe("Driver Route Validation (T0.39)", () => {
+  it("rejects non-simple established geometry instead of hiding the driver after save", async () => {
+    const service = new DriversService(makeMockPrisma(true, false));
+    await expect(
+      service.updateRoute(MOCK_PROFILE_ROW.user_id, {
+        type: "LineString",
+        coordinates: [
+          [67.01, 24.86],
+          [67.05, 24.89],
+        ],
+      }),
+    ).rejects.toThrow(UnprocessableEntityException);
+  });
   it("200 — updates route when coordinates are valid and inside launch city bbox", async () => {
     const prisma = makeMockPrisma(true);
     const service = new DriversService(prisma);

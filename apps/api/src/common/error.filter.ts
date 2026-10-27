@@ -157,6 +157,25 @@ export class ErrorFilter implements ExceptionFilter {
       console.error("[ErrorFilter Internal Error]:", exception);
     }
 
+    if (exception instanceof HttpException) {
+      const resp = exception.getResponse();
+      const customHeaders =
+        (exception as unknown as { headers?: Record<string, string | number> }).headers ??
+        (typeof resp === "object" && resp !== null
+          ? (resp as Record<string, unknown>)["headers"]
+          : undefined);
+
+      if (customHeaders && typeof customHeaders === "object") {
+        for (const [key, value] of Object.entries(
+          customHeaders as Record<string, string | number>,
+        )) {
+          if (value !== undefined && value !== null) {
+            reply.header(key, String(value));
+          }
+        }
+      }
+    }
+
     const body: ErrorEnvelope = {
       error: {
         code,

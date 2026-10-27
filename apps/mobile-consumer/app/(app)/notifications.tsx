@@ -14,8 +14,8 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { ScreenHeader } from "../../src/components/common/ScreenHeader";
 import {
   getApiClient,
   Badge,
@@ -93,24 +93,20 @@ export default function ConsumerNotificationsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Notifications</Text>
-        </View>
+      <View style={styles.container}>
+        <ScreenHeader title="Notifications" testID="notifications-header" />
         <View style={styles.skeletonList}>
           <Skeleton height={80} />
           <Skeleton height={80} />
           <Skeleton height={80} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notifications</Text>
-      </View>
+    <View style={styles.container}>
+      <ScreenHeader title="Notifications" testID="notifications-header" />
 
       <FlatList
         data={notifications}
@@ -160,19 +156,12 @@ export default function ConsumerNotificationsScreen() {
           </Pressable>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  header: {
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.outlineVariant,
-    backgroundColor: colors.surfaceContainerLowest,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
   headerTitle: {
     ...typography.headlineMd,
     color: colors.onSurface,

@@ -65,6 +65,12 @@ export default function AppLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="search"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

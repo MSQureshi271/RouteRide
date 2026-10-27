@@ -48,6 +48,7 @@ describe("Driver Onboarding Status & Route Authorization", () => {
     acceptance_rate: null,
     created_at: new Date(),
     updated_at: new Date(),
+    coverage_configured: true,
   };
 
   beforeEach(() => {
@@ -64,6 +65,24 @@ describe("Driver Onboarding Status & Route Authorization", () => {
   });
 
   describe("getOnboardingStatus", () => {
+    it("requires declared service coverage even when legacy days and price are set", async () => {
+      prisma.sql.mockResolvedValueOnce([
+        {
+          ...BASE_PROFILE_ROW,
+          operating_days: [1],
+          base_price_cents: 1000000,
+          coverage_configured: false,
+        },
+      ]);
+      prisma.sql.mockResolvedValueOnce(
+        ["CNIC", "LICENCE", "REGISTRATION", "INSURANCE"].map((doc_type) => ({
+          doc_type,
+        })),
+      );
+      const result = await service.getOnboardingStatus(USER_ID);
+      expect(result.currentStep).toBe("step4-availability");
+      expect(result.availabilityCompleted).toBe(false);
+    });
     it("returns step1-vehicle when driver profile does not exist", async () => {
       prisma.sql.mockResolvedValueOnce([]); // no profile
 
