@@ -508,8 +508,8 @@ do not assume a default command.
 
 ## Phase 1B — Subscription Lifecycle (`subscriptions`, realistic: 2 weeks)
 
-- [ ] **T1.14 — Create a pending subscription request, idempotently** · `M` · deps: A1.08
-  - **Implementation:** [T1.13/T1.14 implementation, verification and rollout](T1.13-T1.14-progress.md); migration deployment and native verification remain pending.
+- [x] **T1.14 — Create a pending subscription request, idempotently** · `M` · deps: A1.08
+  - **Implementation:** [T1.13/T1.14 implementation, verification and rollout](T1.13-T1.14-progress.md). **Complete 2026-10-31:** every Do/Accept/Verify item is covered by passing integration tests and a live HTTP run on the real API + matching stack (see the progress report). T1.14 is API-only, so it has no device gate. Deploying the migration to staging/production is a release step, tracked in the rollout section of the report.
   - **Do:** POST /subscriptions validates rider ownership and current driver approval, coverage, offered days/legs and requestability. Create PENDING only; no seats, slots, runs or billing. Atomically claim Idempotency-Key with body hash and bounded retention; record requested terms and 24-hour deadline.
   - **Accept:** A lower-ranked or distant-corridor driver can receive a request within their service area. Pending requests may coexist without reserving capacity. Same key/body replays; changed body returns 422; in-flight duplicate returns 409. Add explicit DECLINED outcome to planned contracts; no REQUESTED/ACCEPTED persisted aliases.
   - **Verify:** Concurrent identical requests create one row; multiple distinct pending requests for one free seat may coexist; out-of-area direct requests and cross-owner riders fail; client ranking is not trusted.
