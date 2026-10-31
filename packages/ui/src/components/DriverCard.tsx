@@ -2,6 +2,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import type { DriverDiscoveryResultV2 } from "@routeride/contracts";
 import { colors, spacing, radii, typography } from "../tokens";
+import { formatMonthlyPrice } from "../format/money";
 
 export interface DriverCardProps {
   driver: DriverDiscoveryResultV2;
@@ -15,10 +16,6 @@ export function DriverCard({
   scheduleLabel,
   onReview,
 }: DriverCardProps) {
-  const price = (driver.monthlyPriceCents / 100).toLocaleString("en-PK", {
-    minimumFractionDigits: driver.monthlyPriceCents % 100 === 0 ? 0 : 2,
-    maximumFractionDigits: 2,
-  });
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -70,7 +67,7 @@ export function DriverCard({
       </Text>
       <View style={styles.distances}>
         <Text style={styles.price}>
-          {driver.currency} {price} / month
+          {formatMonthlyPrice(driver.monthlyPriceCents, driver.currency)}
         </Text>
         <Text style={styles.value}>
           {driver.availableSeats}{" "}

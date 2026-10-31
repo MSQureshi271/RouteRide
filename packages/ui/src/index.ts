@@ -31,3 +31,4 @@ export * from "./maps/AddressPicker";
 export * from "./maps/PlaceSearchInput";
 export * from "./maps/LocationDropdown";
 export * from "./components/DriverCard";
+export * from "./format/money";

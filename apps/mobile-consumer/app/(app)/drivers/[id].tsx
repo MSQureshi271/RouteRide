@@ -14,6 +14,7 @@ import {
 } from "@routeride/contracts";
 import {
   colors,
+  formatMonthlyPrice,
   getApiClient,
   radii,
   spacing,
@@ -189,12 +190,10 @@ export default function DriverProfileScreen() {
               <Text style={styles.heading}>Available for this commute</Text>
               <Text style={styles.body}>
                 {profile.driver.availableSeats} seats available ·{" "}
-                {profile.driver.currency}{" "}
-                {(profile.driver.monthlyPriceCents / 100).toLocaleString(
-                  "en-PK",
-                  { minimumFractionDigits: 2 },
-                )}{" "}
-                / month
+                {formatMonthlyPrice(
+                  profile.driver.monthlyPriceCents,
+                  profile.driver.currency,
+                )}
               </Text>
               <Text style={styles.body}>
                 {profile.driver.routeState === "UNSET"
