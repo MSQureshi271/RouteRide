@@ -1,233 +1,116 @@
-# RouteRide — Agent Context File
+# CLAUDE.md
 
-> This file is the first thing an AI session reads. It answers: what is this project, how do I work in it, what do I never do, and what commands do I run?
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
----
+RouteRide is a recurring-transport subscription marketplace for school runs in Karachi, Pakistan. Parents subscribe to driver-operated routes; drivers set service areas, schedules and prices; the platform handles matching, payments and tracking. Currency is PKR stored as integer paisas; timezone is Asia/Karachi (UTC+5, no DST).
 
-## What This Is
+> `AGENTS.md` is the more detailed agent guide and `GEMINI.md` sets workflow preferences (below). Older docs (`README.md`, task prose, earlier versions of this file) contain stale versions/commands — **trust manifests, lockfiles, source and `.github/workflows/ci.yml`**.
 
-RouteRide is a **recurring-transport subscription marketplace** for school transportation in Karachi, Pakistan. Parents subscribe to driver-operated school runs; drivers set fixed routes, schedules, and prices; the platform handles matching, payments, and real-time tracking.
+## Workflow preferences (from GEMINI.md)
 
-**Tech stack (pinned versions):**
+- **New features:** before implementing, you MUST first produce a completely thorough plan listing the changes needed to the existing codebase and architecture — especially for entirely new features or requests that could affect the codebase at a high level.
+- **Reported errors:** do not jump straight to a fix. You MUST first explain what the error is (define it completely), what likely caused it, and then propose the solution for the user's approval path.
+- **Planning inputs:** to plan, you MUST use the most relevant skills from `.agents/skills/` and the references in `.agents/references/` (quality bar: `.agents/references/definition-of-done.md`). Do this before planning, not after.
+- **Up-to-date docs:** use the internet to look up the latest APIs, package versions and documentation so library usage is current and optimal. Before planning, you MUST use the relevant skills from `.agents/skills/` and `.agents/references/`.
+- Check `tasks/todo.md` and the relevant `docs/SPEC-*.md` for acceptance criteria before starting. For matching/onboarding/subscription work, read `docs/decisions/ADR-011-service-area-discovery-and-driver-acceptance.md` and `tasks/PHASE1A-service-area-amendment.md` first — service-area availability is separate from recommendation ranking, and driver acceptance establishes commitments. The corridor baseline in `tasks/PHASE1A.md` is historical.
 
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| API | NestJS + Fastify adapter | 10 |
-| Database | PostgreSQL + PostGIS | 16 + 3.4 |
-| ORM | Prisma | 5 |
-| Realtime | Socket.IO + Redis adapter | 4 |
-| Queue | BullMQ | 5 |
-| Matching service | Python + FastAPI | 3.12 + 0.115 |
-| Solver | OR-Tools | 9.12 |
-| Mobile | Expo SDK | 53 |
-| Admin panel | Next.js | 15 |
-| Shared contracts | Zod | 3 |
-| Package manager | pnpm workspaces | 11.5 |
-| Build system | Turborepo | 2 |
-| Node | Node.js | 22 LTS |
-| Currency | PKR (integer paisas) | — |
-| Timezone | Asia/Karachi (UTC+5, no DST) | — |
+## Repository layout
 
----
+pnpm workspaces + Turborepo (Node 22+, `pnpm@11.5.1`). Workspace package names are `@routeride/*`.
+
+| Path                                         | What it is                                                                                                                                                                                               |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api`                                   | NestJS 11 + Fastify REST API. Feature dirs sit directly under `src/` (`auth`, `consumers`, `drivers`, `search`, `subscriptions`, `maps`, `notifications`, `storage`, `common`, ...) — not `src/modules/` |
+| `apps/worker`                                | BullMQ background jobs (NestJS)                                                                                                                                                                          |
+| `apps/matching`                              | Python 3.12 FastAPI service: PostGIS discovery, Shapely, OR-Tools. **Not a pnpm package** — Turbo does not run its checks                                                                                |
+| `apps/admin`                                 | Next.js 15 ops dashboard                                                                                                                                                                                 |
+| `apps/mobile-consumer`, `apps/mobile-driver` | Separate Expo (~58) / React Native apps                                                                                                                                                                  |
+| `packages/contracts`                         | Shared Zod 4 schemas and types (API ↔ mobile ↔ admin)                                                                                                                                                    |
+| `packages/config`                            | Env validation (Zod 3, `src/env.ts`), logging, tracing                                                                                                                                                   |
+| `packages/ui`                                | Shared RN components/forms/API helpers/stores; exports TS source directly (no build script)                                                                                                              |
+| `infra`                                      | Terraform / ECS                                                                                                                                                                                          |
+
+Module dependency graph and capability IDs: `docs/project-map.md`.
 
 ## Commands
 
-Every command below runs from the **repo root** and has been verified from a clean clone.
-
-### Day-to-day
+Run from the repo root.
 
 ```bash
-# Start the full dev stack (Postgres, Redis, LocalStack, Mailhog)
-docker compose -f docker-compose.dev.yml up -d
-
-# Install all dependencies (after clone or after package.json changes)
-pnpm install
-
-# Run all linters across the monorepo
-pnpm turbo lint
-
-# Type-check all TypeScript packages
-pnpm turbo typecheck
-
-# Run all unit tests
-pnpm turbo test
-
-# Run all integration tests (requires dev stack running)
-pnpm turbo test:integration
-
-# Build all packages
-pnpm turbo build
+docker compose -f docker-compose.dev.yml up -d   # Postgres(PostGIS 16-3.4), Redis, LocalStack, Mailhog
+pnpm install --frozen-lockfile
+pnpm turbo lint typecheck test build             # required before committing
+pnpm test:integration                            # needs dev/test stack + migrations (see ci.yml, docker-compose.test.yml)
 ```
 
-### API service (apps/api)
+Focused / single-test runs:
 
 ```bash
-# Dev server with hot reload
-pnpm --filter api dev
-
-# Run Prisma migrations (from empty DB)
-pnpm --filter api exec prisma migrate deploy
-
-# Run Prisma Studio (DB GUI)
-pnpm --filter api exec prisma studio
-
-# Seed the database with fixture data
-pnpm --filter api seed
+pnpm --filter @routeride/api dev
+pnpm --filter @routeride/api test -- drivers/service-area.service.test.ts        # unit (jest, src/**)
+pnpm --filter @routeride/api test:integration -- test/auth-otp.integration.test.ts  # integration (test/*.integration.test.ts)
+pnpm --filter @routeride/admin dev
+pnpm --filter @routeride/worker start:dev
+pnpm --filter @routeride/mobile-consumer start    # likewise mobile-driver
+pnpm --filter @routeride/ui typecheck
 ```
 
-### Matching service (apps/matching)
+Turbo builds upstream packages before `typecheck`/`test`; when running a package directly, build `@routeride/contracts` and `@routeride/config` first. Lint uses `--max-warnings=0`.
+
+Matching service (from `apps/matching`, venv active; create with `python -m venv .venv`):
 
 ```bash
-# Python venv setup (first time)
-cd apps/matching && python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-
-# Dev server
-uvicorn app.main:app --reload --port 8000
-
-# Lint
-ruff check .
-
-# Type check
-mypy app
-
-# Tests
-pytest
+python -m pip install -e ".[dev]"
+python -m uvicorn app.main:app --reload --port 8000
+python -m ruff check . ; python -m mypy app ; python -m pytest   # pytest enforces 90% coverage, skips `perf` marker
+python -m pytest tests/test_service_area_contracts.py -k <name>
 ```
 
-### Mobile apps
+## Database-backed tests (never skipped silently)
+
+Some suites need a migrated PostGIS database whose **name contains `test`** (the guards refuse anything else, so a dev database is never touched). The dev Postgres container can host extra test databases; CI uses `routeride_test`.
+
+- **API integration** (`apps/api/test/*.integration.test.ts`): run only via `test:integration` (the unit `jest.config.js` ignores them). Set `DATABASE_URL` to the test database first.
+- **Matching** (`@pytest.mark.db`): set `MATCHING_TEST_DATABASE_URL`. Without it these tests **fail** with setup instructions; they do not skip. To run without a database, deselect them visibly: `pytest -m "not perf and not db"`. Plain `pytest` expects the database (CI runs the full set in the Integration job after migrations).
 
 ```bash
-# Consumer app
-pnpm --filter mobile-consumer start
-
-# Driver app
-pnpm --filter mobile-driver start
+export DATABASE_URL=postgresql://<user>:<pw>@localhost:5432/routeride_<name>_test   # migrated
+export MATCHING_TEST_DATABASE_URL="$DATABASE_URL"
+pnpm --filter @routeride/api test:integration
+cd apps/matching && python -m pytest
 ```
 
-### Packages
+## Database workflow (Prisma 8 RC "contract" workflow)
 
-```bash
-# Build shared contracts package
-pnpm --filter contracts build
+- Source of truth is `apps/api/prisma/contract.prisma`; config in `apps/api/prisma.config.ts` (PostGIS extension); migrations in `apps/api/migrations/`. `prisma/schema.prisma` is the older schema with ADR-002 notes (geography columns are raw SQL; GIST/partial indexes live in the postgis migration).
+- Generate client: `pnpm --filter @routeride/api prisma:emit` → `apps/api/src/generated/prisma` (never hand-edit).
+- Plan/apply: `prisma:plan` (`prisma migration plan`), `prisma:migrate` (`prisma db migrate`). **Do not use `prisma migrate deploy`** (old instructions).
+- Confirm the target DB before migrating or running `pnpm --filter @routeride/api seed`.
 
-# Build shared config package
-pnpm --filter config build
-```
+## Architecture notes
 
----
+- API envelope: `{ data, meta: { requestId, timestamp } }` or `{ error: { code, message }, meta }`; request-ID handling lives in `apps/api/src/common`.
+- Validate every external boundary with Zod (HTTP, env, WebSocket, external APIs); Python uses Pydantic v2 and `mypy --strict`, structlog only.
+- Ownership/authorization is enforced in handlers/guards (e.g. `consumerId !== req.user.id` → `ForbiddenException`).
+- Timestamps are `TIMESTAMPTZ` (UTC); schedules are `TIME` interpreted in the city timezone in application code.
+- Commission rate comes from `platform_config` in the DB; other tunables come from `packages/config` / `docs/platform-parameters.md`. Never hardcode.
+- Env vars: add to `.env.example` **and** the Zod schema in `packages/config/src/env.ts`.
 
-## Code Conventions
+## Rules
 
-### TypeScript (all Node packages)
+**Ask first:** schema changes; new dependencies; new secrets/env vars; auth/authorisation changes (JWT, role guards, ownership); Stripe/payment logic (idempotency + webhook signature patterns are load-bearing).
 
-- **Strict mode, always.** `tsconfig.base.json` sets `strict: true`, `exactOptionalPropertyTypes: true`, `noUncheckedIndexedAccess: true`. Do not disable these.
-- **Zod for validation.** Every external boundary (HTTP input, env vars, WebSocket payloads, external API responses) validates with a Zod schema. Never trust unvalidated input.
-- **Money as integer paisas.** `DRIVER_PRICE_MIN_CENTS` is in paisas (×100 of PKR). Never use `float` for money. `1 PKR = 100 paisas`.
-- **Timestamps as `TIMESTAMPTZ`.** All DB timestamps in UTC. Schedules stored as `TIME` with the city timezone applied in application code.
-- **Conventional commits.** `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`, `ci:`, `perf:`, `revert:`.
-- **Error envelope.** Every API response uses `{ data, meta: { requestId, timestamp } }` or `{ error: { code, message }, meta }`. Never return raw errors.
+**Never:**
 
-**Example — Zod-validated NestJS handler:**
-```typescript
-// ✅ Correct — validates at boundary, enforces ownership
-@Post(':id/riders')
-@UseGuards(JwtGuard, RoleGuard('CONSUMER'))
-async addRider(
-  @Param('id', ParseUUIDPipe) consumerId: string,
-  @Body(new ZodValidationPipe(AddRiderSchema)) dto: AddRiderDto,
-  @Req() req: AuthenticatedRequest,
-): Promise<ApiResponse<Rider>> {
-  if (consumerId !== req.user.id) throw new ForbiddenException();
-  return this.consumerService.addRider(consumerId, dto);
-}
-```
+- Commit `.env*` (except `.env.example`), keys, or real credentials.
+- Log PII, tokens, passwords, or coordinates above 2 dp (`round(lat, 2)`).
+- Use `any` or blanket lint/TS suppressions without a specific justification in the same comment (`// eslint-disable-next-line @typescript-eslint/no-explicit-any — reason: ...`).
+- Disable `strict`, `exactOptionalPropertyTypes`, or `noUncheckedIndexedAccess`.
+- Skip/weaken tests or coverage thresholds to make CI green.
+- Add `[PHASE 2]` endpoints/tables in Phase 0/1 work.
 
-### Python (apps/matching)
+**Always:** write the failing test first; log with `requestId` on every API request; use Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`, `ci:`, `perf:`, `revert:`; enforced by commitlint + husky).
 
-- **Type annotations on everything.** `mypy --strict` must pass.
-- **Pydantic v2 for models.** All request/response models use `pydantic.BaseModel` with validation.
-- **structlog for logging.** No `print()` or `logging` in application code.
-- **Coordinates rounded to 2 dp before logging.** `round(lat, 2)` — never log full precision.
+## Key documents
 
----
-
-## Always / Ask-first / Never
-
-### Always
-
-- Run `pnpm turbo lint typecheck test build` before committing.
-- Write the failing test before writing the implementation.
-- Validate with Zod at every external boundary.
-- Log with `requestId` on every API request.
-- Check `tasks/todo.md` before starting any task — the task defines the acceptance criteria.
-
-### Ask first (do not proceed without human approval)
-
-- **Schema changes** — adding or dropping columns, changing types, or adding constraints.
-- **New external dependencies** — every new package must have a stated purpose and a bundle/audit check.
-- **New secrets or environment variables** — add to `.env.example` and the Zod schema in `packages/config/src/env.ts`.
-- **Changing authentication or authorisation logic** — any change to JWT validation, role guards, or ownership checks.
-- **Stripe or payment logic changes** — the idempotency and webhook signature patterns are load-bearing.
-
-### Never
-
-- Commit `.env`, `*.pem`, `*.key`, or any file matching `.env.*` except `.env.example`.
-- Commit a real Stripe key, AWS key, JWT secret, or webhook secret to version control.
-- Disable a lint rule or TypeScript error with a blanket ignore comment without a specific justification in the same comment.
-- Use `any` in TypeScript without a `// eslint-disable-next-line @typescript-eslint/no-explicit-any — reason:` comment.
-- Log PII (names, addresses, phone numbers), tokens, passwords, or coordinates at precision greater than 2 decimal places.
-- Skip a test to make CI green.
-- Add a `[PHASE 2]` endpoint or table in Phase 0 or Phase 1 work.
-- Hardcode the platform commission rate — it must always come from `platform_config` in the database.
-- Hardcode any value from `docs/platform-parameters.md` — all configurable values come from `packages/config`.
-
----
-
-## Architecture Quick Reference
-
-See `docs/project-map.md` for the full module dependency graph.
-
-| Module | Location | Depends on |
-|--------|----------|-----------|
-| identity (auth) | `apps/api/src/modules/identity` | `packages/config`, `packages/contracts` |
-| driver-onboarding | `apps/api/src/modules/driver-onboarding` | identity |
-| consumer-riders | `apps/api/src/modules/consumer-riders` | identity |
-| route-matching | `apps/matching/` | identity |
-| subscriptions | `apps/api/src/modules/subscriptions` | route-matching |
-| trips | `apps/api/src/modules/trips` | subscriptions |
-| payments | `apps/api/src/modules/payments` | subscriptions |
-| realtime-tracking | `apps/api/src/modules/realtime` | trips |
-| notifications | `apps/api/src/modules/notifications` | identity |
-| messaging | `apps/api/src/modules/messaging` | identity |
-| reviews | `apps/api/src/modules/reviews` | trips |
-| admin-panel | `apps/admin/` | all modules |
-| mobile-shell (consumer) | `apps/mobile-consumer/` | `packages/ui`, `packages/contracts` |
-| mobile-shell (driver) | `apps/mobile-driver/` | `packages/ui`, `packages/contracts` |
-
----
-
-## Key Documents
-
-| Document | Purpose |
-|----------|---------|
-| `tasks/plan.md` | Architecture decisions, risk table, open questions |
-| `tasks/todo.md` | Source of truth for all tasks and their acceptance criteria |
-| `docs/SPEC-DELTA-mvp.md` | Resolved scope conflicts (B1–B5) |
-| `docs/platform-parameters.md` | All configurable business logic values |
-| `docs/threat-model.md` | STRIDE threat model per trust boundary |
-| `docs/data-privacy-register.md` | PII classification and retention |
-| `docs/regulatory-review.md` | Legal and compliance framework |
-| `docs/decisions/ADR-*.md` | Architecture Decision Records |
-
----
-
-## Signals That a Session Is Going Wrong
-
-- You are writing code without a matching task in `tasks/todo.md`.
-- You are making a schema change without asking first.
-- You are adding a dependency without a stated reason.
-- You are using `any` without a comment explaining why.
-- The test you are writing does not fail before the implementation.
-- You are logging a coordinate with more than 2 decimal places.
-- You are hardcoding the commission rate.
+`tasks/plan.md` (decisions/risks), `tasks/todo.md` (tasks + acceptance criteria), `docs/SPEC-DELTA-mvp.md` (resolved scope conflicts), `docs/SPEC-*.md` (per module), `docs/decisions/ADR-*.md`, `docs/threat-model.md`, `docs/data-privacy-register.md`, `docs/regulatory-review.md`, `docs/runbooks/`, `DESIGN.md` (UI).

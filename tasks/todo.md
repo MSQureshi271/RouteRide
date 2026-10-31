@@ -495,12 +495,14 @@ do not assume a default command.
 
 ### ✅ Checkpoint 1-A — discovery works and is fast enough
 
-- [ ] A parent searches and gets a deterministic, ranked list of genuinely eligible drivers
-- [ ] Every hard filter has a failing-then-passing test, including the round-trip return leg
-- [ ] The aggregate-fan-out regression test fails against the TRD's original query and passes against ours
-- [ ] P50 < 120 ms and P99 < 400 ms measured at 500 drivers, with numbers in `PERF.md`
-- [ ] Matching-service coverage ≥ 90% line / 85% branch
-- [ ] Doubt-driven review completed on the eligibility filter set
+> **Status 2026-10-31: evidence recorded for these six items; Phase 1A is not closed.** The fuller checklist in [PHASE1A.md](PHASE1A.md#checkpoint-1-a--discovery-works-and-is-fast-enough) still has four open boxes (`noMatchReasons` mapping, T1.14 atomic revalidation, its `40001` retry, cross-language vectors in NestJS), plus native-device verification for T1.12/T1.13/T1.14/A1.04, CI on Node 22 / Python 3.12, migration deployment and human sign-off. T1.12–T1.14 below stay unchecked until those gates are recorded.
+
+- [x] A parent searches and gets a deterministic, ranked list of genuinely eligible drivers _(amended v2 discovery; ranking/pagination property tests)_
+- [x] Every hard filter has a failing-then-passing test, including the round-trip return leg _(29 source mutations all killed; see [doubt-driven review](PHASE1A-eligibility-doubt-review.md))_
+- [x] The aggregate-fan-out regression test fails against the TRD's original query and passes against ours _(TRD-style join reproduced by mutation)_
+- [x] P50 < 120 ms and P99 < 400 ms measured at 500 drivers, with numbers in `PERF.md` _(re-run 2026-10-31: v2 P50 76.4 ms / P99 151.5 ms)_
+- [x] Matching-service coverage ≥ 90% line / 85% branch _(98.0% line / 90.3% branch with the PostGIS test DB enabled)_
+- [x] Doubt-driven review completed on the eligibility filter set _(AI-performed; human sign-off recommended; findings F1–F7 open for owner decisions)_
 
 ---
 

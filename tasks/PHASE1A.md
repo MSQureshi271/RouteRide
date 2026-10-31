@@ -643,22 +643,28 @@ graph TD
 
 ## Checkpoint 1-A — discovery works and is fast enough
 
-- [ ] A parent searches and gets a deterministic, ranked list of genuinely eligible drivers.
-- [ ] Every hard filter has a failing-then-passing test, including the ROUND_TRIP dual-leg direction check (AD-9).
-- [ ] The aggregate-fan-out regression test fails against the TRD's original query and passes against ours.
-- [ ] P50 < 120 ms and P99 < 400 ms measured **for matching service processing time** at 500 drivers, with numbers in `PERF.md`.
-- [ ] Matching-service coverage >= 90% line / 85% branch.
+- [x] A parent searches and gets a deterministic, ranked list of genuinely eligible drivers. _(verified 2026-10-31 against the amended v2 discovery: ranking/pagination property tests and stable driver-ID tie-break pass)_
+- [x] Every hard filter has a failing-then-passing test, including the ROUND_TRIP dual-leg direction check (AD-9). _(2026-10-31: 29 source mutations across E1–E7 and the v2 discovery predicates are all killed by a failing test; the first pass found 13 surviving predicates, now covered. Evidence: [doubt-driven review](PHASE1A-eligibility-doubt-review.md). ROUND_TRIP is a single corridor check in v1; the dual-leg guarantee is in v2, see finding F4)_
+- [x] The aggregate-fan-out regression test fails against the TRD's original query and passes against ours. _(reproduced by joining reviews to subscriptions in either aggregate: `test_live_postgis_candidate_and_cartesian_elimination` fails; passes on the lateral query)_
+- [x] P50 < 120 ms and P99 < 400 ms measured **for matching service processing time** at 500 drivers, with numbers in `PERF.md`. _(re-run 2026-10-31 on the v2 500-driver PostGIS benchmark: P50 76.4 ms / P99 151.5 ms; recorded in `PERF.md`)_
+- [x] Matching-service coverage >= 90% line / 85% branch. _(2026-10-31, with the PostGIS test DB enabled: 98.0% line, 90.3% branch, 229 tests, 0 skipped; without the DB, 9 PostGIS tests skip and coverage drops to ~92%)_
 - [ ] `firstFailureCounts` uses AD-11 step names internally and maps to contracted `noMatchReasons` for mobile.
-- [ ] `DriverPublicProfile` returns exactly the contracted fields — no internal data leaks (no `ratingScore`, no `acceptedRequestCount`).
-- [ ] Matching service DB role is verified read-only.
-- [ ] Internal API contract (`/internal/v1/matching/search`) is versioned, includes `afternoonTime`, and documented.
-- [ ] Doubt-driven review completed on the eligibility filter set.
+- [x] `DriverPublicProfile` returns exactly the contracted fields — no internal data leaks (no `ratingScore`, no `acceptedRequestCount`). _(contract and service expose neither field; unit tests pass)_
+- [x] Matching service DB role is verified read-only. _(`tests/test_readonly_role.py`: SELECT allowed; INSERT/UPDATE/DELETE/TRUNCATE/DDL denied on all 11 matching tables; verified red by temporarily granting INSERT)_
+- [x] Internal API contract (`/internal/v1/matching/search`) is versioned, includes `afternoonTime`, and documented. _(`afternoonTime` was renamed `pickupTime` in the contract, Zod and Pydantic both require it for ROUND_TRIP and are tested; documented in `docs/SPEC-route-matching.md`; v2 is `/internal/v2/matching/search`)_
+- [x] Doubt-driven review completed on the eligibility filter set. _([review](PHASE1A-eligibility-doubt-review.md), AI-performed on 2026-10-31; human sign-off recommended; open findings F1–F7 need owner decisions)_
 - [ ] T1.14 atomic revalidation proves search results are advisory, not reservations.
 - [ ] T1.14 serialization retry is tested (AD-12).
 - [ ] Cross-language eligibility test vectors (`packages/contracts/test-vectors/eligibility.json`) pass in both Python and NestJS (AD-11).
 - [x] Capacity is day+leg-aware distinct subscription accounting (AD-10).
-- [ ] Proximity uses independent normalization — boundary tests match the "Boundary Test Matrix".
-- [ ] Search cache key excludes `riderId` and includes `matchingConfigVersion`.
+- [x] Proximity uses independent normalization — boundary tests match the "Boundary Test Matrix". _(`test_proximity_score_boundary_matrix` passes)_
+- [x] Search cache key excludes `riderId` and includes `matchingConfigVersion`. _(verified for the public v2 `discover()` path; the legacy v1 `search()` key builder is still in `search.service.ts` but is not used by the controller)_
+
+**Verification status (2026-10-31): Checkpoint 1-A is NOT closed.** Four boxes remain open on purpose:
+
+- _`firstFailureCounts` → `noMatchReasons`:_ superseded by v2, which has no exclusion reasons and does not feed the mobile empty state. Needs an explicit decision (accept the supersession, or define v2 empty-state reasons) before this box can be checked.
+- _T1.14 atomic E1–E7 revalidation, its `40001` retry (AD-12), and cross-language vectors in NestJS:_ not implemented. ADR-011 moved this to Phase 1B (T1.16 atomic acceptance, T1.17 concurrency proof). Test vectors currently run in Python and in `packages/contracts` only. These boxes close when T1.16/T1.17 land, or when the product owner formally accepts the supersession.
+- Also outstanding for Phase 1A exit (not checkboxes): native-device verification of T1.12/T1.13/T1.14 and A1.04, CI on Node 22 / Python 3.12, deployment of the pending-request migration beyond local databases, and the human sign-off on the doubt-driven review.
 
 ---
 
