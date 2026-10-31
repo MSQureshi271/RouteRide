@@ -1,7 +1,7 @@
 /**
  * Step 4 — Availability and Pricing.
  *
- * Driver declares coverage, starting location and offered legs independently
+ * Driver declares their operating city, starting location and driving hours
  * of an optional route, then sets operating days and monthly pricing.
  *
  * Persists service-area settings before pricing and rechecks onboarding status.
@@ -82,8 +82,8 @@ export default function Step4AvailabilityScreen() {
     }
 
     if (!serviceAreaSettings) {
-        setError(
-        "Choose a service area, starting location, and at least one confirmed driving-hours range before submitting.",
+      setError(
+        "Choose an operating city, starting location, and at least one confirmed driving-hours range before submitting.",
       );
       return;
     }
@@ -110,7 +110,7 @@ export default function Step4AvailabilityScreen() {
         );
       } else if (status === 409) {
         setError(
-          "Existing rider commitments prevent these coverage or availability changes.",
+          "Existing rider commitments prevent these location or availability changes.",
         );
       } else {
         setError("Failed to save availability. Please try again.");

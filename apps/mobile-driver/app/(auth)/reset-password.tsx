@@ -156,7 +156,7 @@ export default function DriverResetPasswordScreen() {
             variant="primary"
             role="driver"
             loading={isSubmitting}
-            onPress={handleSubmit(onSubmit)}
+            onPress={() => handleSubmit(onSubmit)()}
             accessibilityLabel="Reset password"
           >
             Reset password

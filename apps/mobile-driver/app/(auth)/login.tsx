@@ -129,7 +129,7 @@ export default function DriverLoginScreen() {
               variant="primary"
               role="driver"
               loading={isSubmitting}
-              onPress={handleSubmit(onSubmit)}
+              onPress={() => handleSubmit(onSubmit)()}
               accessibilityLabel="Sign in as driver"
             >
               Sign in

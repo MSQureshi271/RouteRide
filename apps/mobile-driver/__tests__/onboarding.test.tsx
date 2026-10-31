@@ -158,18 +158,7 @@ describe("Driver Onboarding Wizard (T0.43)", () => {
         return Promise.resolve({
           data: {
             settings: {
-              serviceArea: {
-                type: "Polygon",
-                coordinates: [
-                  [
-                    [67, 24.8],
-                    [67.2, 24.8],
-                    [67.2, 25],
-                    [67, 25],
-                    [67, 24.8],
-                  ],
-                ],
-              },
+              city: "PK-KHI",
               startingLocation: { type: "Point", coordinates: [67.01, 24.86] },
               availability: [1, 2, 3, 4, 5].map((day) => ({
                 day,
@@ -402,7 +391,7 @@ describe("Driver Onboarding Wizard (T0.43)", () => {
       await waitFor(() => {
         expect(getByText("Your driving hours")).toBeTruthy();
         expect(getByText("Schedule preview")).toBeTruthy();
-        expect(getByText("Service area and availability")).toBeTruthy();
+        expect(getByText("Operating city and availability")).toBeTruthy();
         expect(getByPlaceholderText("10,000")).toBeTruthy();
         expect(getByText("Submit Application")).toBeTruthy();
       });
@@ -428,7 +417,7 @@ describe("Driver Onboarding Wizard (T0.43)", () => {
 
       // Price too low (below 5000 PKR)
       await waitFor(() =>
-        expect(getByText("Service area and availability")).toBeTruthy(),
+        expect(getByText("Operating city and availability")).toBeTruthy(),
       );
       fireEvent.changeText(getByPlaceholderText("10,000"), "1000");
       fireEvent.press(getByText("Submit Application"));
@@ -464,7 +453,7 @@ describe("Driver Onboarding Wizard (T0.43)", () => {
 
       fireEvent.changeText(getByPlaceholderText("10,000"), "12000");
       await waitFor(() =>
-        expect(getByText("Service area and availability")).toBeTruthy(),
+        expect(getByText("Operating city and availability")).toBeTruthy(),
       );
       fireEvent.press(getByText("Submit Application"));
 

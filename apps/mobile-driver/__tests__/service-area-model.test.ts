@@ -7,9 +7,7 @@ import {
 } from "../src/service-area/model";
 
 const draft: ServiceAreaDraft = {
-  savedArea: null,
-  southwest: [67, 24.8],
-  northeast: [67.2, 25],
+  city: "PK-KHI",
   startingLocation: { type: "Point", coordinates: [67.01, 24.86] },
   availability: [{ day: 1, startTime: "06:00", endTime: "10:00" }],
   acceptingRequests: true,
@@ -18,30 +16,14 @@ const draft: ServiceAreaDraft = {
 };
 
 describe("Declared service area settings", () => {
-  it("builds service-area coverage from its selected corners", () => {
+  it("saves the operating city without a service area", () => {
     const result = buildServiceAreaSettings(draft);
-    expect(result.serviceArea.coordinates[0]).toEqual([
-      [67, 24.8],
-      [67.2, 24.8],
-      [67.2, 25],
-      [67, 25],
-      [67, 24.8],
-    ]);
+    expect(result.city).toBe("PK-KHI");
+    expect(result).not.toHaveProperty("serviceArea");
     expect(result.routePolyline).toBeNull();
     expect(result.availability).toHaveLength(1);
   });
-  it("preserves a saved nonrectangular polygon and established route", () => {
-    const savedArea = {
-      type: "Polygon" as const,
-      coordinates: [
-        [
-          [67, 24.8],
-          [67.2, 24.8],
-          [67.1, 25],
-          [67, 24.8],
-        ] as [number, number][],
-      ],
-    };
+  it("preserves an established route", () => {
     const routePolyline = {
       type: "LineString" as const,
       coordinates: [
@@ -51,14 +33,13 @@ describe("Declared service area settings", () => {
     };
     const result = buildServiceAreaSettings({
       ...draft,
-      savedArea,
       routeState: "ESTABLISHED",
       routePolyline,
     });
-    expect(result.serviceArea).toEqual(savedArea);
     expect(result.routePolyline).toEqual(routePolyline);
   });
   it("rejects missing starting location and invalid time windows", () => {
+    expect(() => buildServiceAreaSettings({ ...draft, city: null })).toThrow();
     expect(() =>
       buildServiceAreaSettings({ ...draft, startingLocation: null }),
     ).toThrow();
@@ -73,9 +54,6 @@ describe("Declared service area settings", () => {
     expect(() =>
       buildServiceAreaSettings({ ...draft, availability: [] }),
     ).toThrow();
-  });
-  it("rejects when either service-area corner is missing", () => {
-    expect(() => buildServiceAreaSettings({ ...draft, northeast: null })).toThrow();
   });
   it("allows separate same-day intervals and rejects overlapping availability", () => {
     const valid = buildServiceAreaSettings({

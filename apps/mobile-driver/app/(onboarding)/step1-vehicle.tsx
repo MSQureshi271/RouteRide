@@ -254,7 +254,7 @@ export default function Step1VehicleScreen() {
               variant="primary"
               role="driver"
               loading={isSubmitting}
-              onPress={handleSubmit(onSubmit)}
+              onPress={() => handleSubmit(onSubmit)()}
               accessibilityLabel="Save vehicle details and continue"
             >
               Continue

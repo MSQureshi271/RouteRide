@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Pressable,
   StyleSheet,
   Switch,
   Text,
@@ -23,9 +24,7 @@ import { buildServiceAreaSettings, type ServiceAreaDraft } from "./model";
 import { AvailabilityScheduleEditor } from "./AvailabilityScheduleEditor";
 
 const emptyDraft: ServiceAreaDraft = {
-  savedArea: null,
-  southwest: null,
-  northeast: null,
+  city: null,
   startingLocation: null,
   availability: [],
   acceptingRequests: true,
@@ -78,15 +77,6 @@ export function ServiceAreaEditor({
           settings
             ? {
                 ...settings,
-                savedArea: settings.serviceArea,
-                southwest: [
-                  Math.min(...settings.serviceArea.coordinates[0]!.map((p) => p[0])),
-                  Math.min(...settings.serviceArea.coordinates[0]!.map((p) => p[1])),
-                ],
-                northeast: [
-                  Math.max(...settings.serviceArea.coordinates[0]!.map((p) => p[0])),
-                  Math.max(...settings.serviceArea.coordinates[0]!.map((p) => p[1])),
-                ],
               }
             : {
                 ...emptyDraft,
@@ -126,7 +116,7 @@ export function ServiceAreaEditor({
     return (
       <View style={styles.group}>
         <Text accessibilityRole="alert" style={styles.hint}>
-        Could not load your saved service-area settings. Retry before editing.
+          Could not load your saved service-area settings. Retry before editing.
         </Text>
         <Button
           accessibilityLabel="Retry service-area settings"
@@ -142,32 +132,30 @@ export function ServiceAreaEditor({
   return (
     <View style={styles.group}>
       <Text accessibilityRole="header" style={styles.heading}>
-        Service area and availability
+        Operating city and availability
       </Text>
       <Text style={styles.hint}>
-        Choose the corners of the area you serve, your starting location, and
-        the hours you can drive.
+        Choose your starting location and the hours you can drive.
       </Text>
-      <PlaceSearchInput
-        label="Southwest service-area corner"
-        testID="service-area-southwest"
-        hint="Choose the southwest corner of the area you serve."
-        onLocationSelected={(location) =>
-          change({ savedArea: null, southwest: [location.lng, location.lat] })
-        }
-      />
-      <PlaceSearchInput
-        label="Northeast service-area corner"
-        testID="service-area-northeast"
-        hint="Choose the northeast corner of the area you serve."
-        onLocationSelected={(location) =>
-          change({ savedArea: null, northeast: [location.lng, location.lat] })
-        }
-      />
+      <Text style={styles.hint}>Country: Pakistan</Text>
+      <Text style={styles.hint}>Select your operating city</Text>
+      <Pressable
+        accessibilityRole="radio"
+        accessibilityLabel="Karachi, Pakistan"
+        accessibilityState={{ checked: draft.city === "PK-KHI" }}
+        onPress={() => change({ city: "PK-KHI" })}
+        style={[
+          styles.cityOption,
+          draft.city === "PK-KHI" && styles.citySelected,
+        ]}
+      >
+        <Text style={styles.cityText}>Karachi</Text>
+      </Pressable>
       <PlaceSearchInput
         label="Starting location"
         testID="service-area-start"
         hint="Where you start before your first pickup. This is not your live location."
+        onQueryChange={() => change({ startingLocation: null })}
         onLocationSelected={(location) => {
           change({
             startingLocation: {
@@ -183,8 +171,7 @@ export function ServiceAreaEditor({
       />
       {draft.startingLocation && (
         <Text style={styles.hint}>
-          {locations["start"] ??
-            `Saved start: ${draft.startingLocation.coordinates[1].toFixed(4)}, ${draft.startingLocation.coordinates[0].toFixed(4)}`}
+          {locations["start"] ?? "Starting location saved"}
         </Text>
       )}
       <AvailabilityScheduleEditor
@@ -210,6 +197,14 @@ const styles = StyleSheet.create({
   group: { gap: spacing.sm },
   heading: { ...typography.headlineMd, color: colors.onSurface },
   hint: { ...typography.bodyMd, color: colors.onSurfaceVariant },
+  cityOption: {
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    borderRadius: 8,
+  },
+  citySelected: { borderColor: colors.secondary },
+  cityText: { ...typography.bodyMd, color: colors.onSurface },
   toggle: {
     flexDirection: "row",
     alignItems: "center",

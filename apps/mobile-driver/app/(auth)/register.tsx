@@ -158,7 +158,7 @@ export default function DriverRegisterScreen() {
               variant="primary"
               role="driver"
               loading={isSubmitting}
-              onPress={handleSubmit(onSubmit)}
+              onPress={() => handleSubmit(onSubmit)()}
               accessibilityLabel="Apply to drive"
             >
               Apply to drive

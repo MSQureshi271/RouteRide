@@ -48,18 +48,7 @@ jest.mock("react-native-maps", () => ({
 }));
 jest.mock("@quidone/react-native-wheel-picker");
 const settings = {
-  serviceArea: {
-    type: "Polygon",
-    coordinates: [
-      [
-        [67, 24.8],
-        [67.2, 24.8],
-        [67.2, 25],
-        [67, 25],
-        [67, 24.8],
-      ],
-    ],
-  },
+  city: "PK-KHI",
   startingLocation: { type: "Point", coordinates: [67.01, 24.86] },
   availability: [{ day: 1, startTime: "06:00", endTime: "08:00" }],
   acceptingRequests: true,
@@ -134,22 +123,32 @@ describe("Service-area editor", () => {
   }, 30000);
   it("uses the driver confirm green for selected days and presets", async () => {
     const screen = render(<ServiceAreaEditor onChange={jest.fn()} />);
-    await waitFor(() => expect(screen.getByTestId("service-area-start")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByTestId("service-area-start")).toBeTruthy(),
+    );
     fireEvent.press(screen.getByTestId("service-area-start"));
     chooseTime(screen, 8, 30, "AM");
     fireEvent.press(screen.getByLabelText("Confirm start time"));
     chooseTime(screen, 4, 30, "PM");
     fireEvent.press(screen.getByLabelText("Confirm end time"));
 
-    expect(StyleSheet.flatten(screen.getByTestId("availability-day-1").props["style"])).toMatchObject({
+    expect(
+      StyleSheet.flatten(
+        screen.getByTestId("availability-day-1").props["style"],
+      ),
+    ).toMatchObject({
       backgroundColor: colors.secondary,
       borderColor: colors.secondary,
     });
-    expect(StyleSheet.flatten(screen.getByTestId("availability-preset-work").props["style"])).toMatchObject({
+    expect(
+      StyleSheet.flatten(
+        screen.getByTestId("availability-preset-work").props["style"],
+      ),
+    ).toMatchObject({
       backgroundColor: colors.secondary,
     });
   });
-  it("requires both service-area corners before saving the schedule", async () => {
+  it("saves a new driver's schedule with a starting location and city", async () => {
     mockGet.mockResolvedValue({
       data: {
         settings: null,
@@ -160,16 +159,17 @@ describe("Service-area editor", () => {
     });
     const change = jest.fn();
     const screen = render(<ServiceAreaEditor onChange={change} />);
-    await waitFor(() => expect(screen.getByTestId("service-area-southwest")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByTestId("service-area-start")).toBeTruthy(),
+    );
     expect(change).toHaveBeenLastCalledWith(null);
-    fireEvent.press(screen.getByTestId("service-area-southwest"));
-    fireEvent.press(screen.getByTestId("service-area-northeast"));
+    fireEvent.press(screen.getByLabelText("Karachi, Pakistan"));
     fireEvent.press(screen.getByTestId("service-area-start"));
     addWorkHours(screen);
     await waitFor(() =>
       expect(change).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          serviceArea: settings.serviceArea,
+          city: "PK-KHI",
           startingLocation: { type: "Point", coordinates: [67, 24.8] },
         }),
       ),
@@ -241,8 +241,7 @@ describe("Service-area editor", () => {
       expect(screen.getByTestId("service-area-start")).toBeTruthy(),
     );
     expect(change).toHaveBeenLastCalledWith(null);
-    fireEvent.press(screen.getByTestId("service-area-southwest"));
-    fireEvent.press(screen.getByTestId("service-area-northeast"));
+    fireEvent.press(screen.getByLabelText("Karachi, Pakistan"));
     fireEvent.press(screen.getByTestId("service-area-start"));
     addWorkHours(screen);
     await waitFor(() =>

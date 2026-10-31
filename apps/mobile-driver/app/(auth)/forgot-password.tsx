@@ -128,7 +128,7 @@ export default function DriverForgotPasswordScreen() {
               variant="primary"
               role="driver"
               loading={isSubmitting}
-              onPress={handleSubmit(onSubmit)}
+              onPress={() => handleSubmit(onSubmit)()}
               accessibilityLabel="Send reset code"
             >
               Send reset code

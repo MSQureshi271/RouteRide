@@ -4,9 +4,7 @@ import {
 } from "@routeride/contracts";
 
 export interface ServiceAreaDraft {
-  savedArea: DriverServiceAreaSettings["serviceArea"] | null;
-  southwest: [number, number] | null;
-  northeast: [number, number] | null;
+  city: DriverServiceAreaSettings["city"] | null;
   startingLocation: DriverServiceAreaSettings["startingLocation"] | null;
   availability: DriverServiceAreaSettings["availability"];
   acceptingRequests: boolean;
@@ -126,23 +124,11 @@ export function replaceAvailabilityGroup(
 export function buildServiceAreaSettings(
   draft: ServiceAreaDraft,
 ): DriverServiceAreaSettings {
-  const serviceArea = draft.savedArea ?? (draft.southwest && draft.northeast
-    ? {
-        type: "Polygon" as const,
-        coordinates: [[
-          draft.southwest,
-          [draft.northeast[0], draft.southwest[1]],
-          draft.northeast,
-          [draft.southwest[0], draft.northeast[1]],
-          draft.southwest,
-        ]],
-      }
-    : null);
-  if (!serviceArea) throw new Error("Choose both service-area corners.");
   if (!draft.startingLocation)
     throw new Error("Choose your starting location.");
+  if (!draft.city) throw new Error("Choose your operating city.");
   const parsed = DriverServiceAreaSettingsSchema.safeParse({
-    serviceArea,
+    city: draft.city,
     startingLocation: draft.startingLocation,
     availability: draft.availability,
     acceptingRequests: draft.acceptingRequests,
