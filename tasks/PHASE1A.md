@@ -648,7 +648,7 @@ graph TD
 - [x] The aggregate-fan-out regression test fails against the TRD's original query and passes against ours. _(reproduced by joining reviews to subscriptions in either aggregate: `test_live_postgis_candidate_and_cartesian_elimination` fails; passes on the lateral query)_
 - [x] P50 < 120 ms and P99 < 400 ms measured **for matching service processing time** at 500 drivers, with numbers in `PERF.md`. _(re-run 2026-10-31 on the v2 500-driver PostGIS benchmark: P50 76.4 ms / P99 151.5 ms; recorded in `PERF.md`)_
 - [x] Matching-service coverage >= 90% line / 85% branch. _(2026-10-31, with the PostGIS test DB enabled: 98.0% line, 90.3% branch, 229 tests, 0 skipped; without the DB, 9 PostGIS tests skip and coverage drops to ~92%)_
-- [ ] ~~`firstFailureCounts` uses AD-11 step names internally and maps to contracted `noMatchReasons` for mobile.~~ **Superseded; decision needed.** The v2 discovery response has no exclusion reasons, and the mobile empty state offers a schedule adjustment instead (T1.12). Close this box by either (a) formally accepting that supersession, or (b) defining v2 empty-state reasons (for example no driver offering the day, or no availability at the time) with a contract and tests. Until the product owner chooses, it stays open. The v1 `firstFailureCounts` → `noMatchReasons` mapping still exists and is tested for the legacy `/internal/v1` path.
+- [x] ~~`firstFailureCounts` uses AD-11 step names internally and maps to contracted `noMatchReasons` for mobile.~~ **Supersession accepted by the product owner on 2026-10-31.** The v2 discovery response deliberately has no exclusion reasons, and the mobile empty state offers a schedule adjustment instead (T1.12). The v1 `firstFailureCounts` → `noMatchReasons` mapping still exists and is tested for the legacy `/internal/v1` path.
 - [x] `DriverPublicProfile` returns exactly the contracted fields — no internal data leaks (no `ratingScore`, no `acceptedRequestCount`). _(contract and service expose neither field; unit tests pass)_
 - [x] Matching service DB role is verified read-only. _(`tests/test_readonly_role.py`: SELECT allowed; INSERT/UPDATE/DELETE/TRUNCATE/DDL denied on all 11 matching tables; verified red by temporarily granting INSERT)_
 - [x] Internal API contract (`/internal/v1/matching/search`) is versioned, includes `afternoonTime`, and documented. _(`afternoonTime` was renamed `pickupTime` in the contract, Zod and Pydantic both require it for ROUND_TRIP and are tested; documented in `docs/SPEC-route-matching.md`; v2 is `/internal/v2/matching/search`)_
@@ -660,11 +660,14 @@ graph TD
 - [x] Proximity uses independent normalization — boundary tests match the "Boundary Test Matrix". _(`test_proximity_score_boundary_matrix` passes)_
 - [x] Search cache key excludes `riderId` and includes `matchingConfigVersion`. _(verified for the public v2 `discover()` path; the legacy v1 `search()` key builder is still in `search.service.ts` but is not used by the controller)_
 
-**Verification status (2026-10-31): Checkpoint 1-A is NOT closed.** Four boxes remain open. Their wording was rewritten on 2026-10-31 to point at the work that now owns them (struck-through text is the original criterion, kept for history):
+**Verification status (2026-10-31): Checkpoint 1-A is NOT closed.** Three boxes remain open. Their wording was rewritten on 2026-10-31 to point at the work that now owns them (struck-through text is the original criterion, kept for history). The `noMatchReasons` box was closed the same day by the product owner accepting the supersession.
 
-- _`noMatchReasons` mapping:_ waiting on a product decision (accept the supersession, or define v2 empty-state reasons).
 - _Search is advisory / atomic acceptance, `40001` retry, shared vectors in NestJS:_ owned by Phase 1B **T1.16** (atomic acceptance) and **T1.17** (concurrency proof). They close when those tasks pass, not before.
-- Also outstanding for Phase 1A exit (not checkboxes): native-device verification of T1.12 and T1.13 (T1.14 is complete) and A1.04, CI on Node 22 / Python 3.12, deployment of the pending-request migration beyond local databases, and the human sign-off on the doubt-driven review.
+- Also outstanding for Phase 1A exit (not checkboxes):
+  - Native-device verification of T1.12 and T1.13 (T1.14 is complete) and A1.04.
+  - CI on Node 22 / Python 3.12: to be run by the product owner after pushing.
+  - Deployment of the pending-request and operating-city migrations beyond local databases: they apply only through the CD pipeline, and its staging job has no migration step (see `tasks/T1.13-T1.14-progress.md`, "Migration rollout").
+  - Human sign-off on the doubt-driven review.
 
 ---
 
