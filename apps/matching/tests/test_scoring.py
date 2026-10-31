@@ -21,7 +21,7 @@ from uuid import UUID, uuid4
 
 import asyncpg
 import pytest
-from _database import matching_test_database_url
+from _database import SETUP_HINT, require_test_database_url
 from shapely.geometry import LineString
 
 from app.config import settings
@@ -443,17 +443,16 @@ def test_score_and_rank_result_capping() -> None:
 # ─── 9. Live PostgreSQL Integration Test ──────────────────────────────────────
 
 
+@pytest.mark.db
 @pytest.mark.asyncio
 async def test_live_postgres_end_to_end_scoring() -> None:
     """Execute live PostgreSQL query selecting acceptance stats and ranking candidate drivers."""
-    database_url = matching_test_database_url()
-    if database_url is None:
-        pytest.skip("MATCHING_TEST_DATABASE_URL must name a dedicated test database")
+    database_url = require_test_database_url()
     try:
         pool = await asyncpg.create_pool(database_url, min_size=1, max_size=2)
-        assert pool is not None
     except Exception as exc:
-        pytest.skip(f"PostgreSQL not available: {exc}")
+        pytest.fail(f"Test database is not reachable ({type(exc).__name__}). {SETUP_HINT}")
+    assert pool is not None
 
     driver_id = uuid4()
     user_id = uuid4()

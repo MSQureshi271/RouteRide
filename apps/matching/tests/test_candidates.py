@@ -19,7 +19,7 @@ from uuid import UUID
 
 import asyncpg
 import pytest
-from _database import matching_test_database_url
+from _database import connect_test_database
 from shapely import LineString, wkb
 
 from app.matching.candidates import (
@@ -223,24 +223,16 @@ async def test_count_spatial_exclusions_empty_db() -> None:
 # ─── 4. Live PostGIS Database Integration Tests ─────────────────────────────────
 
 
-async def get_live_db_connection() -> asyncpg.Connection | None:
-    """Connect only when an explicit dedicated matching test database is configured."""
-    database_url = matching_test_database_url()
-    if database_url is None:
-        return None
-    try:
-        conn = await asyncpg.connect(database_url, timeout=5.0)
-        return conn
-    except Exception:
-        return None
+async def get_live_db_connection() -> asyncpg.Connection:
+    """Connect to the dedicated test database; fails (never skips) when unavailable."""
+    return await connect_test_database()
 
 
+@pytest.mark.db
 @pytest.mark.asyncio
 async def test_live_postgis_candidate_and_cartesian_elimination() -> None:
     """Live PostGIS test: Seeds 3 reviews and 4 active subscriptions, verifying 3x4 fix."""
     conn = await get_live_db_connection()
-    if conn is None:
-        pytest.skip("Local PostgreSQL container not reachable")
 
     tr = conn.transaction()
     await tr.start()
@@ -338,12 +330,93 @@ async def test_live_postgis_candidate_and_cartesian_elimination() -> None:
         await conn.close()
 
 
+_HARD_FILTER_ROUTE = "LINESTRING(67.005 24.855, 67.115 24.925)"
+
+
+async def _seed_filter_driver(
+    conn: asyncpg.Connection,
+    index: int,
+    *,
+    status: str = "APPROVED",
+    days: str = "ARRAY[1, 2, 3]",
+    route_wkt: str | None = _HARD_FILTER_ROUTE,
+) -> str:
+    """Insert one driver (and its user) for the hard-filter exclusion test."""
+    user_id = await conn.fetchval(
+        "INSERT INTO users (id, email, phone, full_name, role, status) "
+        "VALUES (gen_random_uuid()::text, $1, $2, 'Filter Driver', 'DRIVER', 'ACTIVE') RETURNING id;",
+        f"hardfilter{index}@test.com",
+        f"+92300777{index:04d}",
+    )
+    route_sql = "NULL" if route_wkt is None else f"ST_GeomFromText('{route_wkt}', 4326)"
+    state = "UNSET" if route_wkt is None else "ESTABLISHED"
+    driver_id = await conn.fetchval(
+        "INSERT INTO driver_profiles (id, user_id, status, licence_number, vehicle_make, vehicle_model, "
+        "vehicle_year, vehicle_colour, plate_number, seat_capacity, base_price_cents, operating_days, "
+        f"route_polyline, route_state) VALUES (gen_random_uuid()::text, $1, $2, $3, 'Toyota', 'Corolla', 2020, "
+        f"'White', $4, 4, 500000, {days}, {route_sql}, '{state}') RETURNING id;",
+        user_id,
+        status,
+        f"HF-LIC-{index}",
+        f"HF-{index}",
+    )
+    return str(driver_id)
+
+
+@pytest.mark.db
+@pytest.mark.asyncio
+async def test_live_postgis_hard_filters_exclude_each_ineligible_driver() -> None:
+    """Every retrieval-time hard filter must actually remove a driver that violates only that filter.
+
+    Seeds one eligible driver and one driver per failing stage (E1 status, E2 null and
+    non-simple geometry, E3 pickup too far, E3 destination too far, E5 operating day).
+    Only the eligible driver may be returned.
+    """
+    conn = await get_live_db_connection()
+    tr = conn.transaction()
+    await tr.start()
+    try:
+        eligible = await _seed_filter_driver(conn, 1)
+        excluded = {
+            "E1 status": await _seed_filter_driver(conn, 2, status="PENDING"),
+            "E1 suspended": await _seed_filter_driver(conn, 3, status="SUSPENDED"),
+            "E2 null geometry": await _seed_filter_driver(conn, 4, route_wkt=None),
+            "E2 non-simple geometry": await _seed_filter_driver(
+                conn, 5, route_wkt="LINESTRING(67.005 24.855, 67.115 24.925, 67.005 24.925, 67.115 24.855)"
+            ),
+            # Near the destination (67.11, 24.92) but ~20 km from the pickup (67.01, 24.86).
+            "E3 pickup too far": await _seed_filter_driver(
+                conn, 6, route_wkt="LINESTRING(67.2 24.95, 67.115 24.925)"
+            ),
+            # Near the pickup but ~11 km from the destination.
+            "E3 destination too far": await _seed_filter_driver(
+                conn, 7, route_wkt="LINESTRING(67.005 24.855, 67.02 24.87)"
+            ),
+            "E5 operating day": await _seed_filter_driver(conn, 8, days="ARRAY[2]"),
+        }
+
+        pool = MagicMock(spec=asyncpg.Pool)
+        acquire_ctx = AsyncMock()
+        acquire_ctx.__aenter__.return_value = conn
+        acquire_ctx.__aexit__.return_value = None
+        pool.acquire.return_value = acquire_ctx
+
+        candidates = await find_spatial_candidates(pool, make_search_request(day=1))
+        returned = {str(c.driver_profile_id) for c in candidates}
+
+        assert eligible in returned, "the eligible driver must still be returned"
+        for label, driver_id in excluded.items():
+            assert driver_id not in returned, f"{label} driver must be excluded"
+    finally:
+        await tr.rollback()
+        await conn.close()
+
+
+@pytest.mark.db
 @pytest.mark.asyncio
 async def test_live_postgis_e2_precedence_and_diagnostics() -> None:
     """Live PostGIS test: Validates E2 deterministic CASE classification and canonical logging."""
     conn = await get_live_db_connection()
-    if conn is None:
-        pytest.skip("Local PostgreSQL container not reachable")
 
     tr = conn.transaction()
     await tr.start()
@@ -434,6 +507,7 @@ async def test_live_postgis_e2_precedence_and_diagnostics() -> None:
         await conn.close()
 
 
+@pytest.mark.db
 @pytest.mark.asyncio
 async def test_live_postgis_e5_operating_day_precedence() -> None:
     """Live PostGIS test: Validates that distance (E3) strictly precedes operating day (E5).
@@ -442,8 +516,6 @@ async def test_live_postgis_e5_operating_day_precedence() -> None:
     - Driver B: Corridor is in Lahore (>1000km away, fails E3), operating_days = [2] -> E3 DISTANCE failure.
     """
     conn = await get_live_db_connection()
-    if conn is None:
-        pytest.skip("Local PostgreSQL container not reachable")
 
     tr = conn.transaction()
     await tr.start()
@@ -496,12 +568,11 @@ async def test_live_postgis_e5_operating_day_precedence() -> None:
         await conn.close()
 
 
+@pytest.mark.db
 @pytest.mark.asyncio
 async def test_live_postgis_explain_query_plan() -> None:
     """Live PostGIS test: Verifies that explain_candidate_query executes cleanly."""
     conn = await get_live_db_connection()
-    if conn is None:
-        pytest.skip("Local PostgreSQL container not reachable")
 
     pool = MagicMock(spec=asyncpg.Pool)
     acquire_ctx = AsyncMock()

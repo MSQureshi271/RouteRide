@@ -1,27 +1,23 @@
 """Opt-in 500-driver v2 matching benchmark including PostGIS and ranking."""
 
 import json
-import os
 import statistics
 from datetime import time
 from time import perf_counter
-from urllib.parse import urlparse
 from uuid import uuid4
 
 import asyncpg
 import pytest
+from _database import require_test_database_url
 
 from app.matching.discovery import execute_discovery
 from app.schemas.discovery import DiscoveryRequest
 
 
 @pytest.mark.perf
+@pytest.mark.db
 async def test_mixed_500_driver_postgis_baseline() -> None:
-    dsn = os.environ.get("MATCHING_TEST_DATABASE_URL")
-    if not dsn:
-        pytest.skip("MATCHING_TEST_DATABASE_URL not configured")
-    if "test" not in urlparse(dsn).path.lower():
-        pytest.fail("Dedicated test database required")
+    dsn = require_test_database_url()
     pool = await asyncpg.create_pool(dsn, min_size=1, max_size=1, command_timeout=5)
     assert pool is not None
     try:
@@ -30,7 +26,7 @@ async def test_mixed_500_driver_postgis_baseline() -> None:
               CREATE TEMP TABLE driver_profiles (id uuid PRIMARY KEY,user_id uuid,status text,
                 accepting_requests bool,coverage_setup_required bool,service_area geometry,
                 starting_location geometry,route_state text,route_polyline geometry,
-                seat_capacity int,accepted_request_count int,eligible_request_count int);
+                operating_city text,seat_capacity int,accepted_request_count int,eligible_request_count int);
               CREATE TEMP TABLE driver_availability(driver_profile_id uuid,operating_day int,
                 leg_type text,window_start time,window_end time);
               CREATE TEMP TABLE recurring_runs(id uuid PRIMARY KEY,driver_profile_id uuid,
@@ -52,7 +48,7 @@ async def test_mixed_500_driver_postgis_baseline() -> None:
                     ST_GeomFromText('POLYGON((67 24.8,67.2 24.8,67.2 25,67 25,67 24.8))',4326),
                     ST_GeomFromText('POINT(67.01 24.81)',4326),$2,
                     CASE WHEN $2='ESTABLISHED' THEN
-                      ST_GeomFromText('LINESTRING(67.02 24.82,67.15 24.95)',4326) END,4,8,10)
+                      ST_GeomFromText('LINESTRING(67.02 24.82,67.15 24.95)',4326) END,'PK-KHI',4,8,10)
                 """, driver, "UNSET" if i % 2 else "ESTABLISHED")
                 await conn.executemany("INSERT INTO driver_availability VALUES($1,1,$2,$3,$4)", [
                     (driver, "DEPARTURE", time(6), time(10)),

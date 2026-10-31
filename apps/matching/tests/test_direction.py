@@ -18,9 +18,8 @@ from datetime import time
 from pathlib import Path
 from uuid import UUID
 
-import asyncpg
 import pytest
-from _database import matching_test_database_url
+from _database import connect_test_database
 from shapely.geometry import LineString, Point
 
 from app.matching.candidates import CandidateDriver
@@ -455,6 +454,7 @@ def test_filter_candidates_by_direction() -> None:
 # ─── 8. Live PostGIS Database Parity Tests ──────────────────────────────────────
 
 
+@pytest.mark.db
 @pytest.mark.asyncio
 async def test_live_postgis_st_linelocatepoint_shapely_parity() -> None:
     """Live database parity test comparing PostGIS ST_LineLocatePoint with Shapely project.
@@ -463,13 +463,7 @@ async def test_live_postgis_st_linelocatepoint_shapely_parity() -> None:
     1. Shapely line.project and PostGIS ST_LineLocatePoint return identical float values (abs < 1e-7).
     2. Both layers produce identical eligibility decisions under POSITION_EPSILON = 1e-9.
     """
-    try:
-        database_url = matching_test_database_url()
-        if database_url is None:
-            pytest.skip("MATCHING_TEST_DATABASE_URL must name a dedicated test database")
-        conn = await asyncpg.connect(database_url, timeout=5.0)
-    except Exception:
-        pytest.skip("Local PostgreSQL container not reachable")
+    conn = await connect_test_database()
 
     try:
         # Test line string WKT

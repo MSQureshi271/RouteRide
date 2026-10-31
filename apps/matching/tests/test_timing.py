@@ -34,9 +34,8 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
-import asyncpg
 import pytest
-from _database import matching_test_database_url
+from _database import connect_test_database
 from shapely.geometry import LineString
 
 from app.maps.duration import (
@@ -375,7 +374,7 @@ def test_canonical_test_vectors_e7_stage() -> None:
     ]
     vectors_path = next((p for p in candidates if p.exists()), None)
     if not vectors_path:
-        pytest.skip("Test vectors eligibility.json not found")
+        pytest.fail("Test vectors eligibility.json not found; the shared vectors are required")
 
     with open(vectors_path, encoding="utf-8") as f:
         data = json.load(f)
@@ -464,6 +463,7 @@ def test_canonical_test_vectors_e7_stage() -> None:
 # ─── 6. Live PostgreSQL Database Integration ───────────────────────────────────
 
 
+@pytest.mark.db
 @pytest.mark.asyncio
 async def test_live_postgres_timing_conflicts_and_touching_boundaries() -> None:
     """Live PostgreSQL database integration test verifying:
@@ -478,13 +478,7 @@ async def test_live_postgres_timing_conflicts_and_touching_boundaries() -> None:
        - Slot exists on day 4 (Thursday), search on day 1 (Monday) -> ELIGIBLE.
     5. Empty candidate fast-path.
     """
-    database_url = matching_test_database_url()
-    if database_url is None:
-        pytest.skip("MATCHING_TEST_DATABASE_URL must name a dedicated test database")
-    try:
-        conn = await asyncpg.connect(database_url)
-    except Exception as exc:
-        pytest.skip(f"PostgreSQL database unavailable: {exc}")
+    conn = await connect_test_database()
 
     test_driver_id = uuid4()
     test_user_id = uuid4()

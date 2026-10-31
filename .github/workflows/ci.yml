@@ -144,9 +144,11 @@ jobs:
         working-directory: apps/matching
         run: pip install -e ".[dev]"
 
-      - name: Run pytest with coverage
+      # DB-backed tests are deselected here on purpose (visible as "deselected" in the
+      # summary) and run, never skipped, in the Integration job against migrated PostGIS.
+      - name: Run pytest with coverage (no database)
         working-directory: apps/matching
-        run: pytest
+        run: pytest -m "not perf and not db"
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
@@ -272,3 +274,19 @@ jobs:
           DRIVER_PRICE_MIN_CENTS: "500000"
           DRIVER_PRICE_MAX_CENTS: "3000000"
           REQUIRED_DRIVER_DOCUMENTS: cnic,license,vehicle_registration
+
+      # The matching service's PostGIS tests fail (never skip) without this database.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install matching-service dependencies
+        working-directory: apps/matching
+        run: pip install -e ".[dev]"
+
+      - name: Matching tests against PostGIS (including db-marked tests)
+        working-directory: apps/matching
+        run: pytest -m "not perf"
+        env:
+          MATCHING_TEST_DATABASE_URL: postgresql://ci_user:${{ secrets.CI_DB_PASSWORD || 'ci_test_password_not_real' }}@localhost:5432/routeride_test

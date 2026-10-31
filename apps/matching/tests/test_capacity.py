@@ -29,9 +29,8 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
-import asyncpg
 import pytest
-from _database import matching_test_database_url
+from _database import connect_test_database
 from shapely.geometry import LineString
 
 from app.matching.candidates import CandidateDriver
@@ -359,7 +358,7 @@ def test_shared_test_vectors_capacity_stage() -> None:
     ]
     vectors_path = next((p for p in candidates if p.exists()), None)
     if not vectors_path:
-        pytest.skip("Test vectors eligibility.json not found")
+        pytest.fail("Test vectors eligibility.json not found; the shared vectors are required")
 
     with open(vectors_path, encoding="utf-8") as f:
         data = json.load(f)
@@ -410,6 +409,7 @@ def test_shared_test_vectors_capacity_stage() -> None:
 # ─── 6. Live PostgreSQL Database Integration & Distinct Accounting ─────────────
 
 
+@pytest.mark.db
 @pytest.mark.asyncio
 async def test_live_postgres_capacity_distinct_accounting_and_isolation() -> None:
     """Live database integration test validating:
@@ -422,13 +422,7 @@ async def test_live_postgres_capacity_distinct_accounting_and_isolation() -> Non
     3. Operating day isolation.
     4. filter_candidates_by_capacity end-to-end integration.
     """
-    database_url = matching_test_database_url()
-    if database_url is None:
-        pytest.skip("MATCHING_TEST_DATABASE_URL must name a dedicated test database")
-    try:
-        conn = await asyncpg.connect(database_url)
-    except Exception as exc:
-        pytest.skip(f"PostgreSQL database unavailable: {exc}")
+    conn = await connect_test_database()
 
     test_driver_id = uuid4()
     test_user_id = uuid4()
