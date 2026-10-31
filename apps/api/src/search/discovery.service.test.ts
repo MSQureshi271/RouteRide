@@ -26,7 +26,7 @@ const query = {
 };
 const upstream = {
   version: "v2",
-  policyVersion: "service-area-v2.1:2",
+  policyVersion: "city-v2.2:2",
   pagination: {
     page: 1,
     pageSize: 20,
@@ -148,7 +148,7 @@ describe("v2 discovery gateway", () => {
     expect(cache.get.mock.calls[0]?.[0]).not.toEqual(
       cache.get.mock.calls[1]?.[0],
     );
-    expect(cache.get.mock.calls[0]?.[0]).toContain("service-area-v2.1:2");
+    expect(cache.get.mock.calls[0]?.[0]).toContain("city-v2.2:2");
   });
 
   it("rejects mixed policy deployments rather than caching incompatible results", async () => {

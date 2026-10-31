@@ -140,6 +140,7 @@ model DriverProfile {
   routePolyline        Geometry4326? @map("route_polyline")
   routeState           DriverRouteState @default(UNSET) @map("route_state")
   serviceArea          Geometry4326? @map("service_area")
+  operatingCity        String? @map("operating_city")
   startingLocation     Geometry4326? @map("starting_location")
   acceptingRequests    Boolean @default(false) @map("accepting_requests")
   coverageSetupRequired Boolean @default(true) @map("coverage_setup_required")

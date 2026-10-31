@@ -49,6 +49,7 @@ export class RequestabilityService {
       SELECT dp.*
       FROM driver_profiles dp WHERE dp.id=$1 AND dp.status='APPROVED'
         AND dp.accepting_requests AND NOT dp.coverage_setup_required
+        AND dp.operating_city = 'PK-KHI'
         AND dp.starting_location IS NOT NULL
         AND ((dp.route_state='UNSET' AND dp.route_polyline IS NULL) OR
           (dp.route_state='ESTABLISHED' AND dp.route_polyline IS NOT NULL
@@ -57,9 +58,7 @@ export class RequestabilityService {
            AND ST_SRID(dp.route_polyline)=4326 AND ST_IsValid(dp.route_polyline::geometry)
            AND ST_IsSimple(dp.route_polyline::geometry)))
         AND NOT EXISTS (SELECT 1 FROM requested r WHERE
-          (NOT ST_Covers(dp.service_area::geometry,ST_GeomFromGeoJSON(r."pickupLocation"::text))
-            OR NOT ST_Covers(dp.service_area::geometry,ST_GeomFromGeoJSON(r."dropoffLocation"::text)))
-          OR NOT EXISTS (SELECT 1 FROM driver_availability a WHERE a.driver_profile_id=dp.id
+          NOT EXISTS (SELECT 1 FROM driver_availability a WHERE a.driver_profile_id=dp.id
             AND a.operating_day=r.day
             AND a.window_start<=r."pickupWindowStart"::time AND a.window_end>=r."arrivalDeadline"::time))
       ), capacity AS (

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "column.public.driver_profiles.operating_city",
+    "label": "Add column \"operating_city\" to \"driver_profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "operating_city",
+        "table": "driver_profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"operating_city\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "driver_profiles", "operating_city"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"operating_city\"",
+        "sql": "ALTER TABLE \"public\".\"driver_profiles\" ADD COLUMN \"operating_city\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"operating_city\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "driver_profiles", "operating_city"]
+      }
+    ]
+  },
+  {
+    "id": "driver.operating-city.backfill",
+    "label": "Backfill the Karachi market and update request setup",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Preserve existing coverage data and require city and starting location",
+        "sql": "UPDATE driver_profiles SET operating_city = 'PK-KHI' WHERE operating_city IS NULL;\n            ALTER TABLE driver_profiles DROP CONSTRAINT ck_driver_request_setup;\n            ALTER TABLE driver_profiles ADD CONSTRAINT ck_driver_request_setup CHECK\n              (NOT accepting_requests OR (NOT coverage_setup_required AND operating_city IS NOT NULL AND starting_location IS NOT NULL))"
+      }
+    ],
+    "postcheck": []
+  }
+]

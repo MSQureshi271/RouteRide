@@ -114,6 +114,9 @@ export class MapsController {
     const apiKey = env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey || apiKey === "REPLACE_ME") {
+      if (env.NODE_ENV === "production") {
+        throw new ServiceUnavailableException("Location search is unavailable");
+      }
       this.logger.warn({
         event: "maps.autocomplete.stub",
         reason: "GOOGLE_MAPS_API_KEY absent — returning dev stubs",
@@ -231,6 +234,9 @@ export class MapsController {
     const apiKey = env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey || apiKey === "REPLACE_ME") {
+      if (env.NODE_ENV === "production") {
+        throw new ServiceUnavailableException("Location search is unavailable");
+      }
       this.logger.warn({
         event: "maps.place_details.stub",
         reason: "GOOGLE_MAPS_API_KEY absent — returning dev stub",

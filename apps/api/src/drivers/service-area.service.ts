@@ -18,7 +18,7 @@ export class ServiceAreaService {
   async get(userId: string) {
     const rows = await this.prisma.query<{
       id: string;
-      service_area: unknown;
+      operating_city: string | null;
       starting_location: unknown;
       route_polyline: unknown;
       route_state: string;
@@ -28,7 +28,7 @@ export class ServiceAreaService {
       coverage_setup_required: boolean;
       availability: unknown;
     }>(
-      `SELECT id, ST_AsGeoJSON(service_area::geometry)::json AS service_area,
+      `SELECT id, operating_city,
         ST_AsGeoJSON(starting_location::geometry)::json AS starting_location,
         ST_AsGeoJSON(route_polyline::geometry)::json AS route_polyline,
         route_state, accepting_requests, availability_version, roster_version,
@@ -43,7 +43,7 @@ export class ServiceAreaService {
     const row = rows[0];
     if (!row) throw new NotFoundException("Driver profile not found");
     const parsed = DriverServiceAreaSettingsSchema.safeParse({
-      serviceArea: row.service_area,
+      city: row.operating_city,
       startingLocation: row.starting_location,
       routeState: row.route_state,
       routePolyline: row.route_polyline,
@@ -69,13 +69,12 @@ export class ServiceAreaService {
       lat >= env.LAUNCH_CITY_BBOX_MIN_LAT &&
       lat <= env.LAUNCH_CITY_BBOX_MAX_LAT;
     if (
-      !settings.serviceArea.coordinates.every((ring) => ring.every(inBounds)) ||
       !inBounds(settings.startingLocation.coordinates) ||
       (settings.routePolyline &&
         !settings.routePolyline.coordinates.every(inBounds))
     ) {
       throw new UnprocessableEntityException(
-        "Coverage, start location and route must be inside platform service bounds",
+        "Start location and route must be inside the operating city bounds",
       );
     }
     const client = await this.prisma.pool.connect();
@@ -94,27 +93,22 @@ export class ServiceAreaService {
         "SELECT id FROM subscriptions WHERE driver_profile_id = $1 AND status IN ('ACTIVE', 'PAUSED') LIMIT 1",
         [profile.id],
       );
-      const area = JSON.stringify(settings.serviceArea);
       const start = JSON.stringify(settings.startingLocation);
       const route = settings.routePolyline
         ? JSON.stringify(settings.routePolyline)
         : null;
       const validity = await client.query<{ valid: boolean }>(
-        `SELECT (ST_IsValid(a) AND NOT ST_IsEmpty(a) AND ST_Area(a::geography) > 0 AND ST_Covers(a, p))
-          AND ($3::text IS NULL OR (ST_IsValid(ST_GeomFromGeoJSON($3))
-            AND ST_IsSimple(ST_GeomFromGeoJSON($3)))) AS valid
-         FROM (SELECT ST_SetSRID(ST_GeomFromGeoJSON($1),4326) a,
-          ST_SetSRID(ST_GeomFromGeoJSON($2),4326) p) g`,
-        [area, start, route],
+        `SELECT ($1::text IS NULL OR (ST_IsValid(ST_GeomFromGeoJSON($1))
+            AND ST_IsSimple(ST_GeomFromGeoJSON($1)))) AS valid`,
+        [route],
       );
       if (!validity.rows[0]?.valid)
         throw new UnprocessableEntityException(
-          "Coverage must be valid and include the declared starting location; supplied route must be simple",
+          "The supplied route must be valid and simple",
         );
       if (commitments.rows.length) {
-        // Legacy coverage declaration is additive: it must preserve the stored
-        // route and cover every existing endpoint and schedule window. Established
-        // settings edits otherwise require the future feasibility-reviewed path.
+        // Preserve existing route and schedule commitments when completing setup.
+        // Other edits require a feasibility-reviewed path.
         const preservation = await client.query<{ safe: boolean }>(
           `SELECT route_state = $2 AND
             ((route_polyline IS NULL AND $3::text IS NULL) OR
@@ -123,9 +117,7 @@ export class ServiceAreaService {
             AND NOT EXISTS (
               SELECT 1 FROM subscriptions s WHERE s.driver_profile_id = dp.id
                 AND s.status IN ('ACTIVE','PAUSED') AND
-                (NOT ST_Covers(ST_GeomFromGeoJSON($4), s.agreed_pickup_location::geometry)
-                 OR NOT ST_Covers(ST_GeomFromGeoJSON($4), s.agreed_dropoff_location::geometry)
-                 OR s.agreed_pickup_location IS NULL OR s.agreed_dropoff_location IS NULL
+                (s.agreed_pickup_location IS NULL OR s.agreed_dropoff_location IS NULL
                  OR NOT EXISTS (SELECT 1 FROM driver_schedule_slots dss WHERE dss.subscription_id = s.id))
             ) AND NOT EXISTS (
               SELECT 1 FROM driver_schedule_slots dss JOIN subscriptions s ON s.id = dss.subscription_id
@@ -136,7 +128,7 @@ export class ServiceAreaService {
                   WHERE a.day = day_values.operating_day
                     AND a."startTime"::time <= dss.slot_start AND a."endTime"::time >= dss.slot_end)
             ) AND (coverage_setup_required OR
-              (ST_Equals(service_area::geometry, ST_GeomFromGeoJSON($4)) AND
+              (operating_city = $4 AND
                ST_Equals(starting_location::geometry, ST_GeomFromGeoJSON($6)) AND
                (SELECT COUNT(*) FROM driver_availability a WHERE a.driver_profile_id = dp.id) = $7 AND
                NOT EXISTS (SELECT 1 FROM driver_availability a WHERE a.driver_profile_id = dp.id
@@ -149,7 +141,7 @@ export class ServiceAreaService {
             profile.id,
             settings.routeState,
             route,
-            area,
+            settings.city,
             JSON.stringify(settings.availability),
             start,
             settings.availability.length,
@@ -157,12 +149,12 @@ export class ServiceAreaService {
         );
         if (!preservation.rows[0]?.safe)
           throw new ConflictException(
-            "Coverage setup must preserve every accepted rider's route and windows; other edits require a reviewed schedule change",
+            "Settings must preserve every accepted rider's route and windows; other edits require a reviewed schedule change",
           );
       }
       await client.query(
         `UPDATE driver_profiles SET
-        service_area = ST_SetSRID(ST_GeomFromGeoJSON($2),4326),
+        operating_city = $2,
         starting_location = ST_SetSRID(ST_GeomFromGeoJSON($3),4326),
         route_state = $4,
         route_polyline = CASE WHEN $5::text IS NULL THEN NULL ELSE ST_SetSRID(ST_GeomFromGeoJSON($5),4326) END,
@@ -172,7 +164,7 @@ export class ServiceAreaService {
         WHERE id = $1`,
         [
           profile.id,
-          area,
+          settings.city,
           start,
           settings.routeState,
           route,
@@ -189,12 +181,7 @@ export class ServiceAreaService {
           `INSERT INTO driver_availability
           (driver_profile_id,operating_day,window_start,window_end)
           VALUES ($1,$2,$3::time,$4::time)`,
-          [
-            profile.id,
-            window.day,
-            window.startTime,
-            window.endTime,
-          ],
+          [profile.id, window.day, window.startTime, window.endTime],
         );
       }
       await client.query("COMMIT");

@@ -79,8 +79,8 @@ describe("pending requests on the actual migrated public schema", () => {
       await pool.query(
         `INSERT INTO driver_profiles(id,user_id,licence_number,vehicle_make,vehicle_model,vehicle_year,
         vehicle_colour,plate_number,seat_capacity,operating_days,base_price_cents,status,service_area,starting_location,
-        accepting_requests,coverage_setup_required,route_state) VALUES($1,$2,'fixture','Toyota','HiAce',2024,'White',$1,1,ARRAY[1]::smallint[],12345,'APPROVED',
-        ST_GeomFromText('POLYGON((67 24.8,67.1 24.8,67.1 24.9,67 24.9,67 24.8))',4326),ST_GeomFromText('POINT(67.01 24.81)',4326),true,false,'UNSET')`,
+        accepting_requests,coverage_setup_required,route_state,operating_city) VALUES($1,$2,'fixture','Toyota','HiAce',2024,'White',$1,1,ARRAY[1]::smallint[],12345,'APPROVED',
+        NULL,ST_GeomFromText('POINT(67.01 24.81)',4326),true,false,'UNSET','PK-KHI')`,
         [driver, driverUser],
       );
       await pool.query(
@@ -92,7 +92,7 @@ describe("pending requests on the actual migrated public schema", () => {
       await pool.query(
         `INSERT INTO subscriptions(id,rider_id,driver_profile_id,type,status,monthly_price_cents,
         agreed_pickup_time,agreed_dropoff_time,pickup_address_text,dropoff_address_text,start_date,next_billing_date)
-        VALUES($1,$2,$3,'DEPARTURE','CANCELLED',12345,'2026-10-01T07:00:00Z','2026-10-01T08:00:00Z',
+        VALUES($1,$2,$3,'ONE_WAY','CANCELLED',12345,'2026-10-01T07:00:00Z','2026-10-01T08:00:00Z',
         'Legacy home','Legacy destination','2026-10-01','2026-11-01')`,
         [randomUUID(), rider, driver],
       );

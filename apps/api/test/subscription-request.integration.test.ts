@@ -55,7 +55,7 @@ describe("pending subscription requests in PostGIS", () => {
     await pool.query(`CREATE TABLE consumer_profiles(id text PRIMARY KEY,user_id text);
       CREATE TABLE riders(id text PRIMARY KEY,consumer_profile_id text REFERENCES consumer_profiles(id));
       CREATE TABLE driver_profiles(id text PRIMARY KEY,status text,accepting_requests boolean,coverage_setup_required boolean,
-        service_area geometry,starting_location geometry,route_state text,route_polyline geometry,
+        service_area geometry,starting_location geometry,route_state text,route_polyline geometry,operating_city text,
         seat_capacity int,base_price_cents int,currency text);
       CREATE TABLE driver_availability(driver_profile_id text,operating_day smallint,window_start time,window_end time);
       CREATE TABLE recurring_runs(id text PRIMARY KEY,driver_profile_id text,operating_day smallint,leg_type text,
@@ -73,7 +73,7 @@ describe("pending subscription requests in PostGIS", () => {
     await pool.query(
       `INSERT INTO driver_profiles VALUES($1,'APPROVED',true,false,
       ST_GeomFromText('POLYGON((67 24.8,67.1 24.8,67.1 24.9,67 24.9,67 24.8))',4326),
-      ST_GeomFromText('POINT(67.01 24.81)',4326),'UNSET',NULL,1,12345,'PKR');`,
+      ST_GeomFromText('POINT(67.01 24.81)',4326),'UNSET',NULL,'PK-KHI',1,12345,'PKR');`,
       [driver],
     );
     await pool.query(
@@ -174,7 +174,7 @@ describe("pending subscription requests in PostGIS", () => {
         .rows[0]?.count,
     ).toBe(2);
   });
-  it("rejects cross-owner riders, uncovered return legs and unavailable days", async () => {
+  it("rejects cross-owner riders, endpoints outside the city and unavailable days", async () => {
     await expect(
       service.create(randomUUID(), "owner", terms),
     ).rejects.toMatchObject({ status: 403 });
@@ -187,7 +187,7 @@ describe("pending subscription requests in PostGIS", () => {
         legs: [
           {
             ...terms.legs[0]!,
-            dropoffLocation: { type: "Point", coordinates: [67.2, 24.88] },
+            dropoffLocation: { type: "Point", coordinates: [67.4, 24.88] },
           },
         ],
       }),
@@ -196,6 +196,19 @@ describe("pending subscription requests in PostGIS", () => {
       (await pool.query("SELECT COUNT(*)::int AS count FROM subscriptions"))
         .rows[0]?.count,
     ).toBe(0);
+  });
+  it("allows a request outside the driver's historical polygon within the city", async () => {
+    await expect(
+      service.create(actor, "outside-old-area", {
+        ...terms,
+        legs: [
+          {
+            ...terms.legs[0]!,
+            dropoffLocation: { type: "Point", coordinates: [67.2, 24.88] },
+          },
+        ],
+      }),
+    ).resolves.toMatchObject({ status: "PENDING", reviewStatus: "REQUIRED" });
   });
   it("expires idempotency claims and scopes keys by actor", async () => {
     const scoped = `subscription-request:${requestHash(["POST /subscriptions", actor, "expired"])}`;
@@ -246,7 +259,7 @@ describe("pending subscription requests in PostGIS", () => {
           round.legs[0]!,
           {
             ...round.legs[1]!,
-            dropoffLocation: { type: "Point", coordinates: [67.2, 24.88] },
+            dropoffLocation: { type: "Point", coordinates: [67.4, 24.88] },
           },
         ],
       }),

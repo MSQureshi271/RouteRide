@@ -409,12 +409,8 @@
               "actor": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "actorId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["actorId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "User",
@@ -512,12 +508,8 @@
               "riders": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "consumerProfileId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["consumerProfileId"]
                 },
                 "to": {
                   "model": "Rider",
@@ -527,12 +519,8 @@
               "user": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "userId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["userId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "User",
@@ -610,12 +598,8 @@
               "driverProfile": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "driverProfileId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["driverProfileId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "DriverProfile",
@@ -708,12 +692,8 @@
               "driver": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "driverId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["driverId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "DriverProfile",
@@ -723,12 +703,8 @@
               "verifier": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "verifiedBy"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["verifiedBy"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "User",
@@ -816,12 +792,8 @@
               "driverProfile": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "driverProfileId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["driverProfileId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "DriverProfile",
@@ -951,12 +923,8 @@
               "driverProfile": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "driverProfileId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["driverProfileId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "DriverProfile",
@@ -1088,6 +1056,13 @@
               },
               "licenceNumber": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "operatingCity": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -1243,12 +1218,8 @@
               "availability": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "driverProfileId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["driverProfileId"]
                 },
                 "to": {
                   "model": "DriverAvailability",
@@ -1258,12 +1229,8 @@
               "documents": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "driverId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["driverId"]
                 },
                 "to": {
                   "model": "DriverDocument",
@@ -1273,12 +1240,8 @@
               "locationLogs": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "driverProfileId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["driverProfileId"]
                 },
                 "to": {
                   "model": "LocationLog",
@@ -1288,12 +1251,8 @@
               "matchingStats": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "driverProfileId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["driverProfileId"]
                 },
                 "to": {
                   "model": "DriverMatchingStats",
@@ -1303,12 +1262,8 @@
               "payouts": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "driverProfileId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["driverProfileId"]
                 },
                 "to": {
                   "model": "DriverPayout",
@@ -1318,12 +1273,8 @@
               "recurringRuns": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "driverProfileId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["driverProfileId"]
                 },
                 "to": {
                   "model": "RecurringRun",
@@ -1333,12 +1284,8 @@
               "scheduleSlots": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "driverProfileId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["driverProfileId"]
                 },
                 "to": {
                   "model": "DriverScheduleSlot",
@@ -1348,12 +1295,8 @@
               "subscriptions": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "driverProfileId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["driverProfileId"]
                 },
                 "to": {
                   "model": "Subscription",
@@ -1363,12 +1306,8 @@
               "trips": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "driverProfileId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["driverProfileId"]
                 },
                 "to": {
                   "model": "Trip",
@@ -1378,12 +1317,8 @@
               "user": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "userId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["userId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "User",
@@ -1428,6 +1363,9 @@
                 },
                 "licenceNumber": {
                   "column": "licence_number"
+                },
+                "operatingCity": {
+                  "column": "operating_city"
                 },
                 "operatingDays": {
                   "column": "operating_days"
@@ -1555,12 +1493,8 @@
               "driverProfile": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "driverProfileId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["driverProfileId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "DriverProfile",
@@ -1570,12 +1504,8 @@
               "subscription": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "subscriptionId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["subscriptionId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "Subscription",
@@ -1734,12 +1664,8 @@
               "driverProfile": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "driverProfileId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["driverProfileId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "DriverProfile",
@@ -1749,12 +1675,8 @@
               "trips": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "locationLogId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["locationLogId"]
                 },
                 "to": {
                   "model": "Trip",
@@ -1836,12 +1758,8 @@
               "sender": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "senderId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["senderId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "User",
@@ -1851,12 +1769,8 @@
               "subscription": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "subscriptionId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["subscriptionId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "Subscription",
@@ -1952,12 +1866,8 @@
               "user": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "userId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["userId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "User",
@@ -2100,12 +2010,8 @@
               "subscription": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "subscriptionId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["subscriptionId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "Subscription",
@@ -2327,12 +2233,8 @@
               "assignments": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "runId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["runId"]
                 },
                 "to": {
                   "model": "RunAssignment",
@@ -2342,12 +2244,8 @@
               "driverProfile": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "driverProfileId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["driverProfileId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "DriverProfile",
@@ -2522,12 +2420,8 @@
               "author": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "authorId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["authorId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "User",
@@ -2537,12 +2431,8 @@
               "subscription": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "subscriptionId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["subscriptionId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "Subscription",
@@ -2552,12 +2442,8 @@
               "target": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "targetId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["targetId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "User",
@@ -2677,12 +2563,8 @@
               "consumerProfile": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "consumerProfileId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["consumerProfileId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "ConsumerProfile",
@@ -2692,12 +2574,8 @@
               "subscriptions": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "riderId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["riderId"]
                 },
                 "to": {
                   "model": "Subscription",
@@ -2811,12 +2689,8 @@
               "run": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "runId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["runId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "RecurringRun",
@@ -2826,12 +2700,8 @@
               "stops": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "assignmentId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["assignmentId"]
                 },
                 "to": {
                   "model": "RunStop",
@@ -2841,12 +2711,8 @@
               "subscription": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "subscriptionId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["subscriptionId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "Subscription",
@@ -2954,12 +2820,8 @@
               "assignment": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "assignmentId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["assignmentId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "RunAssignment",
@@ -3164,12 +3026,8 @@
               "driverProfile": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "driverProfileId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["driverProfileId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "DriverProfile",
@@ -3179,12 +3037,8 @@
               "messages": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "subscriptionId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["subscriptionId"]
                 },
                 "to": {
                   "model": "Message",
@@ -3194,12 +3048,8 @@
               "payments": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "subscriptionId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["subscriptionId"]
                 },
                 "to": {
                   "model": "Payment",
@@ -3209,12 +3059,8 @@
               "reviews": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "subscriptionId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["subscriptionId"]
                 },
                 "to": {
                   "model": "Review",
@@ -3224,12 +3070,8 @@
               "rider": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "riderId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["riderId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "Rider",
@@ -3239,12 +3081,8 @@
               "runAssignments": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "subscriptionId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["subscriptionId"]
                 },
                 "to": {
                   "model": "RunAssignment",
@@ -3254,12 +3092,8 @@
               "scheduleSlots": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "subscriptionId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["subscriptionId"]
                 },
                 "to": {
                   "model": "DriverScheduleSlot",
@@ -3269,12 +3103,8 @@
               "trips": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "subscriptionId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["subscriptionId"]
                 },
                 "to": {
                   "model": "Trip",
@@ -3546,12 +3376,8 @@
               "driverProfile": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "driverProfileId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["driverProfileId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "DriverProfile",
@@ -3561,12 +3387,8 @@
               "locationLog": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "locationLogId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["locationLogId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "LocationLog",
@@ -3576,12 +3398,8 @@
               "subscription": {
                 "cardinality": "N:1",
                 "on": {
-                  "localFields": [
-                    "subscriptionId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
+                  "localFields": ["subscriptionId"],
+                  "targetFields": ["id"]
                 },
                 "to": {
                   "model": "Subscription",
@@ -3742,12 +3560,8 @@
               "auditActorLog": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "actorId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["actorId"]
                 },
                 "to": {
                   "model": "AuditLog",
@@ -3757,12 +3571,8 @@
               "authoredReviews": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "authorId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["authorId"]
                 },
                 "to": {
                   "model": "Review",
@@ -3772,12 +3582,8 @@
               "consumerProfile": {
                 "cardinality": "1:1",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "userId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["userId"]
                 },
                 "to": {
                   "model": "ConsumerProfile",
@@ -3787,12 +3593,8 @@
               "documentVerifier": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "verifiedBy"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["verifiedBy"]
                 },
                 "to": {
                   "model": "DriverDocument",
@@ -3802,12 +3604,8 @@
               "driverProfile": {
                 "cardinality": "1:1",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "userId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["userId"]
                 },
                 "to": {
                   "model": "DriverProfile",
@@ -3817,12 +3615,8 @@
               "notifications": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "userId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["userId"]
                 },
                 "to": {
                   "model": "Notification",
@@ -3832,12 +3626,8 @@
               "receivedReviews": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "targetId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["targetId"]
                 },
                 "to": {
                   "model": "Review",
@@ -3847,12 +3637,8 @@
               "sentMessages": {
                 "cardinality": "1:N",
                 "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "senderId"
-                  ]
+                  "localFields": ["id"],
+                  "targetFields": ["senderId"]
                 },
                 "to": {
                   "model": "Message",
@@ -3917,10 +3703,7 @@
           "native_enum": {
             "ScheduleLegType": {
               "kind": "postgres-enum",
-              "members": [
-                "DEPARTURE",
-                "PICKUP"
-              ],
+              "members": ["DEPARTURE", "PICKUP"],
               "typeName": "ScheduleLegType"
             }
           },
@@ -3980,16 +3763,12 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": [
-                      "actor_id"
-                    ],
+                    "columns": ["actor_id"],
                     "namespaceId": "public",
                     "tableName": "audit_log"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -3997,26 +3776,19 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "actor_id"
-                  ],
+                  "columns": ["actor_id"],
                   "name": "audit_log_actor_id_idx_69a2164d",
                   "prefix": "audit_log_actor_id_idx",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "entity_type",
-                    "entity_id"
-                  ],
+                  "columns": ["entity_type", "entity_id"],
                   "name": "idx_audit_entity",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -4070,16 +3842,12 @@
                 {
                   "onDelete": "cascade",
                   "source": {
-                    "columns": [
-                      "user_id"
-                    ],
+                    "columns": ["user_id"],
                     "namespaceId": "public",
                     "tableName": "consumer_profiles"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -4087,15 +3855,11 @@
               ],
               "indexes": [],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": [
                 {
-                  "columns": [
-                    "user_id"
-                  ]
+                  "columns": ["user_id"]
                 }
               ]
             },
@@ -4131,16 +3895,12 @@
                 {
                   "onDelete": "cascade",
                   "source": {
-                    "columns": [
-                      "driver_profile_id"
-                    ],
+                    "columns": ["driver_profile_id"],
                     "namespaceId": "public",
                     "tableName": "driver_availability"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "driver_profiles"
                   }
@@ -4148,9 +3908,7 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "driver_profile_id"
-                  ],
+                  "columns": ["driver_profile_id"],
                   "name": "driver_availability_driver_profile_id_idx_bbd11be7",
                   "prefix": "driver_availability_driver_profile_id_idx",
                   "unique": false
@@ -4167,9 +3925,7 @@
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -4224,32 +3980,24 @@
                 {
                   "onDelete": "cascade",
                   "source": {
-                    "columns": [
-                      "driver_id"
-                    ],
+                    "columns": ["driver_id"],
                     "namespaceId": "public",
                     "tableName": "driver_documents"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "driver_profiles"
                   }
                 },
                 {
                   "source": {
-                    "columns": [
-                      "verified_by"
-                    ],
+                    "columns": ["verified_by"],
                     "namespaceId": "public",
                     "tableName": "driver_documents"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -4257,26 +4005,20 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "driver_id"
-                  ],
+                  "columns": ["driver_id"],
                   "name": "driver_documents_driver_id_idx_56c848ae",
                   "prefix": "driver_documents_driver_id_idx",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "verified_by"
-                  ],
+                  "columns": ["verified_by"],
                   "name": "driver_documents_verified_by_idx_f6af2456",
                   "prefix": "driver_documents_verified_by_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -4325,16 +4067,12 @@
                 {
                   "onDelete": "cascade",
                   "source": {
-                    "columns": [
-                      "driver_profile_id"
-                    ],
+                    "columns": ["driver_profile_id"],
                     "namespaceId": "public",
                     "tableName": "driver_matching_stats"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "driver_profiles"
                   }
@@ -4342,33 +4080,23 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "driver_profile_id"
-                  ],
+                  "columns": ["driver_profile_id"],
                   "name": "driver_matching_stats_driver_profile_id_idx_bbd11be7",
                   "prefix": "driver_matching_stats_driver_profile_id_idx",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "driver_profile_id",
-                    "operating_day"
-                  ],
+                  "columns": ["driver_profile_id", "operating_day"],
                   "name": "idx_dms_driver_day",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": [
                 {
-                  "columns": [
-                    "driver_profile_id",
-                    "operating_day"
-                  ],
+                  "columns": ["driver_profile_id", "operating_day"],
                   "name": "uq_driver_matching_stats_day"
                 }
               ]
@@ -4464,16 +4192,12 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": [
-                      "driver_profile_id"
-                    ],
+                    "columns": ["driver_profile_id"],
                     "namespaceId": "public",
                     "tableName": "driver_payouts"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "driver_profiles"
                   }
@@ -4481,18 +4205,14 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "driver_profile_id"
-                  ],
+                  "columns": ["driver_profile_id"],
                   "name": "driver_payouts_driver_profile_id_idx_bbd11be7",
                   "prefix": "driver_payouts_driver_profile_id_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -4607,6 +4327,11 @@
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": false
+                },
+                "operating_city": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "operating_days": {
                   "codecId": "pg/int4@1",
@@ -4745,16 +4470,12 @@
                 {
                   "onDelete": "cascade",
                   "source": {
-                    "columns": [
-                      "user_id"
-                    ],
+                    "columns": ["user_id"],
                     "namespaceId": "public",
                     "tableName": "driver_profiles"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -4768,36 +4489,26 @@
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "service_area"
-                  ],
+                  "columns": ["service_area"],
                   "name": "idx_dp_service_area",
                   "type": "gist",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "status"
-                  ],
+                  "columns": ["status"],
                   "name": "idx_dp_status",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": [
                 {
-                  "columns": [
-                    "user_id"
-                  ]
+                  "columns": ["user_id"]
                 },
                 {
-                  "columns": [
-                    "plate_number"
-                  ]
+                  "columns": ["plate_number"]
                 }
               ]
             },
@@ -4865,16 +4576,12 @@
                 {
                   "onDelete": "cascade",
                   "source": {
-                    "columns": [
-                      "driver_profile_id"
-                    ],
+                    "columns": ["driver_profile_id"],
                     "namespaceId": "public",
                     "tableName": "driver_schedule_slots"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "driver_profiles"
                   }
@@ -4882,16 +4589,12 @@
                 {
                   "onDelete": "cascade",
                   "source": {
-                    "columns": [
-                      "subscription_id"
-                    ],
+                    "columns": ["subscription_id"],
                     "namespaceId": "public",
                     "tableName": "driver_schedule_slots"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "subscriptions"
                   }
@@ -4899,34 +4602,25 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "driver_profile_id"
-                  ],
+                  "columns": ["driver_profile_id"],
                   "name": "driver_schedule_slots_driver_profile_id_idx_bbd11be7",
                   "prefix": "driver_schedule_slots_driver_profile_id_idx",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "subscription_id"
-                  ],
+                  "columns": ["subscription_id"],
                   "name": "driver_schedule_slots_subscription_id_idx_1e74615f",
                   "prefix": "driver_schedule_slots_subscription_id_idx",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "driver_profile_id",
-                    "operating_days"
-                  ],
+                  "columns": ["driver_profile_id", "operating_days"],
                   "name": "idx_dss_driver_days",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": [
                 {
@@ -4983,17 +4677,13 @@
               "foreignKeys": [],
               "indexes": [
                 {
-                  "columns": [
-                    "expires_at"
-                  ],
+                  "columns": ["expires_at"],
                   "name": "idx_idempotency_expires",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "key"
-                ]
+                "columns": ["key"]
               },
               "uniques": []
             },
@@ -5041,16 +4731,12 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": [
-                      "driver_profile_id"
-                    ],
+                    "columns": ["driver_profile_id"],
                     "namespaceId": "public",
                     "tableName": "location_logs"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "driver_profiles"
                   }
@@ -5058,18 +4744,14 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "driver_profile_id"
-                  ],
+                  "columns": ["driver_profile_id"],
                   "name": "location_logs_driver_profile_id_idx_bbd11be7",
                   "prefix": "location_logs_driver_profile_id_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -5113,32 +4795,24 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": [
-                      "subscription_id"
-                    ],
+                    "columns": ["subscription_id"],
                     "namespaceId": "public",
                     "tableName": "messages"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "subscriptions"
                   }
                 },
                 {
                   "source": {
-                    "columns": [
-                      "sender_id"
-                    ],
+                    "columns": ["sender_id"],
                     "namespaceId": "public",
                     "tableName": "messages"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -5146,34 +4820,25 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "subscription_id",
-                    "sent_at"
-                  ],
+                  "columns": ["subscription_id", "sent_at"],
                   "name": "idx_messages_sub",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "sender_id"
-                  ],
+                  "columns": ["sender_id"],
                   "name": "messages_sender_id_idx_311853a4",
                   "prefix": "messages_sender_id_idx",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "subscription_id"
-                  ],
+                  "columns": ["subscription_id"],
                   "name": "messages_subscription_id_idx_1e74615f",
                   "prefix": "messages_subscription_id_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -5236,16 +4901,12 @@
                 {
                   "onDelete": "cascade",
                   "source": {
-                    "columns": [
-                      "user_id"
-                    ],
+                    "columns": ["user_id"],
                     "namespaceId": "public",
                     "tableName": "notifications"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -5253,26 +4914,19 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "user_id",
-                    "is_read"
-                  ],
+                  "columns": ["user_id", "is_read"],
                   "name": "idx_notifications_user_unread",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "user_id"
-                  ],
+                  "columns": ["user_id"],
                   "name": "notifications_user_id_idx_6c952402",
                   "prefix": "notifications_user_id_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -5325,9 +4979,7 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -5435,16 +5087,12 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": [
-                      "subscription_id"
-                    ],
+                    "columns": ["subscription_id"],
                     "namespaceId": "public",
                     "tableName": "payments"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "subscriptions"
                   }
@@ -5452,35 +5100,25 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "idempotency_key"
-                  ],
+                  "columns": ["idempotency_key"],
                   "name": "idx_payments_idempotency",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "subscription_id"
-                  ],
+                  "columns": ["subscription_id"],
                   "name": "idx_payments_sub",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": [
                 {
-                  "columns": [
-                    "stripe_payment_intent_id"
-                  ]
+                  "columns": ["stripe_payment_intent_id"]
                 },
                 {
-                  "columns": [
-                    "idempotency_key"
-                  ]
+                  "columns": ["idempotency_key"]
                 }
               ]
             },
@@ -5562,16 +5200,12 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": [
-                      "driver_profile_id"
-                    ],
+                    "columns": ["driver_profile_id"],
                     "namespaceId": "public",
                     "tableName": "recurring_runs"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "driver_profiles"
                   }
@@ -5579,27 +5213,19 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "driver_profile_id",
-                    "operating_day",
-                    "leg_type"
-                  ],
+                  "columns": ["driver_profile_id", "operating_day", "leg_type"],
                   "name": "idx_runs_driver_day_leg",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "driver_profile_id"
-                  ],
+                  "columns": ["driver_profile_id"],
                   "name": "recurring_runs_driver_profile_id_idx_bbd11be7",
                   "prefix": "recurring_runs_driver_profile_id_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -5643,15 +5269,11 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": [
                 {
-                  "columns": [
-                    "token_hash"
-                  ]
+                  "columns": ["token_hash"]
                 }
               ]
             },
@@ -5700,48 +5322,36 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": [
-                      "subscription_id"
-                    ],
+                    "columns": ["subscription_id"],
                     "namespaceId": "public",
                     "tableName": "reviews"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "subscriptions"
                   }
                 },
                 {
                   "source": {
-                    "columns": [
-                      "author_id"
-                    ],
+                    "columns": ["author_id"],
                     "namespaceId": "public",
                     "tableName": "reviews"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
                 },
                 {
                   "source": {
-                    "columns": [
-                      "target_id"
-                    ],
+                    "columns": ["target_id"],
                     "namespaceId": "public",
                     "tableName": "reviews"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "users"
                   }
@@ -5749,41 +5359,30 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "author_id"
-                  ],
+                  "columns": ["author_id"],
                   "name": "reviews_author_id_idx_f3862461",
                   "prefix": "reviews_author_id_idx",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "subscription_id"
-                  ],
+                  "columns": ["subscription_id"],
                   "name": "reviews_subscription_id_idx_1e74615f",
                   "prefix": "reviews_subscription_id_idx",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "target_id"
-                  ],
+                  "columns": ["target_id"],
                   "name": "reviews_target_id_idx_7e52b3aa",
                   "prefix": "reviews_target_id_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": [
                 {
-                  "columns": [
-                    "subscription_id",
-                    "author_id"
-                  ]
+                  "columns": ["subscription_id", "author_id"]
                 }
               ]
             },
@@ -5859,16 +5458,12 @@
                 {
                   "onDelete": "cascade",
                   "source": {
-                    "columns": [
-                      "consumer_profile_id"
-                    ],
+                    "columns": ["consumer_profile_id"],
                     "namespaceId": "public",
                     "tableName": "riders"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "consumer_profiles"
                   }
@@ -5888,18 +5483,14 @@
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "consumer_profile_id"
-                  ],
+                  "columns": ["consumer_profile_id"],
                   "name": "riders_consumer_profile_id_idx_453ed188",
                   "prefix": "riders_consumer_profile_id_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -5962,32 +5553,24 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": [
-                      "run_id"
-                    ],
+                    "columns": ["run_id"],
                     "namespaceId": "public",
                     "tableName": "run_assignments"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "recurring_runs"
                   }
                 },
                 {
                   "source": {
-                    "columns": [
-                      "subscription_id"
-                    ],
+                    "columns": ["subscription_id"],
                     "namespaceId": "public",
                     "tableName": "run_assignments"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "subscriptions"
                   }
@@ -5995,41 +5578,29 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "subscription_id",
-                    "leg_type"
-                  ],
+                  "columns": ["subscription_id", "leg_type"],
                   "name": "idx_assignment_subscription_leg",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "run_id"
-                  ],
+                  "columns": ["run_id"],
                   "name": "run_assignments_run_id_idx_61d39f90",
                   "prefix": "run_assignments_run_id_idx",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "subscription_id"
-                  ],
+                  "columns": ["subscription_id"],
                   "name": "run_assignments_subscription_id_idx_1e74615f",
                   "prefix": "run_assignments_subscription_id_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": [
                 {
-                  "columns": [
-                    "run_id",
-                    "subscription_id"
-                  ],
+                  "columns": ["run_id", "subscription_id"],
                   "name": "uq_run_subscription"
                 }
               ]
@@ -6094,16 +5665,12 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": [
-                      "assignment_id"
-                    ],
+                    "columns": ["assignment_id"],
                     "namespaceId": "public",
                     "tableName": "run_stops"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "run_assignments"
                   }
@@ -6111,32 +5678,22 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "assignment_id"
-                  ],
+                  "columns": ["assignment_id"],
                   "name": "run_stops_assignment_id_idx_566acae3",
                   "prefix": "run_stops_assignment_id_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": [
                 {
-                  "columns": [
-                    "assignment_id",
-                    "stop_type"
-                  ],
+                  "columns": ["assignment_id", "stop_type"],
                   "name": "uq_assignment_stop_type"
                 },
                 {
-                  "columns": [
-                    "run_id",
-                    "position"
-                  ],
+                  "columns": ["run_id", "position"],
                   "name": "uq_run_stop_position"
                 }
               ]
@@ -6294,32 +5851,24 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": [
-                      "rider_id"
-                    ],
+                    "columns": ["rider_id"],
                     "namespaceId": "public",
                     "tableName": "subscriptions"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "riders"
                   }
                 },
                 {
                   "source": {
-                    "columns": [
-                      "driver_profile_id"
-                    ],
+                    "columns": ["driver_profile_id"],
                     "namespaceId": "public",
                     "tableName": "subscriptions"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "driver_profiles"
                   }
@@ -6327,50 +5876,34 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "driver_profile_id",
-                    "status"
-                  ],
+                  "columns": ["driver_profile_id", "status"],
                   "name": "idx_subs_driver_status",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "status",
-                    "response_deadline"
-                  ],
+                  "columns": ["status", "response_deadline"],
                   "name": "idx_subs_response_deadline",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "rider_id"
-                  ],
+                  "columns": ["rider_id"],
                   "name": "idx_subs_rider",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "rider_id",
-                    "driver_profile_id",
-                    "status"
-                  ],
+                  "columns": ["rider_id", "driver_profile_id", "status"],
                   "name": "idx_subs_rider_driver_status",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "driver_profile_id"
-                  ],
+                  "columns": ["driver_profile_id"],
                   "name": "subscriptions_driver_profile_id_idx_bbd11be7",
                   "prefix": "subscriptions_driver_profile_id_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -6428,9 +5961,7 @@
               "foreignKeys": [],
               "indexes": [],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             },
@@ -6540,48 +6071,36 @@
               "foreignKeys": [
                 {
                   "source": {
-                    "columns": [
-                      "subscription_id"
-                    ],
+                    "columns": ["subscription_id"],
                     "namespaceId": "public",
                     "tableName": "trips"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "subscriptions"
                   }
                 },
                 {
                   "source": {
-                    "columns": [
-                      "driver_profile_id"
-                    ],
+                    "columns": ["driver_profile_id"],
                     "namespaceId": "public",
                     "tableName": "trips"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "driver_profiles"
                   }
                 },
                 {
                   "source": {
-                    "columns": [
-                      "location_log_id"
-                    ],
+                    "columns": ["location_log_id"],
                     "namespaceId": "public",
                     "tableName": "trips"
                   },
                   "target": {
-                    "columns": [
-                      "id"
-                    ],
+                    "columns": ["id"],
                     "namespaceId": "public",
                     "tableName": "location_logs"
                   }
@@ -6589,50 +6108,35 @@
               ],
               "indexes": [
                 {
-                  "columns": [
-                    "status",
-                    "scheduled_date"
-                  ],
+                  "columns": ["status", "scheduled_date"],
                   "name": "idx_trips_status_date",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "driver_profile_id"
-                  ],
+                  "columns": ["driver_profile_id"],
                   "name": "trips_driver_profile_id_idx_bbd11be7",
                   "prefix": "trips_driver_profile_id_idx",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "location_log_id"
-                  ],
+                  "columns": ["location_log_id"],
                   "name": "trips_location_log_id_idx_65a8b0e1",
                   "prefix": "trips_location_log_id_idx",
                   "unique": false
                 },
                 {
-                  "columns": [
-                    "subscription_id"
-                  ],
+                  "columns": ["subscription_id"],
                   "name": "trips_subscription_id_idx_1e74615f",
                   "prefix": "trips_subscription_id_idx",
                   "unique": false
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": [
                 {
-                  "columns": [
-                    "subscription_id",
-                    "scheduled_date",
-                    "type"
-                  ],
+                  "columns": ["subscription_id", "scheduled_date", "type"],
                   "name": "idx_trips_sub_date"
                 }
               ]
@@ -6752,24 +6256,18 @@
               "foreignKeys": [],
               "indexes": [
                 {
-                  "columns": [
-                    "email"
-                  ],
+                  "columns": ["email"],
                   "name": "idx_users_email",
                   "unique": true
                 },
                 {
-                  "columns": [
-                    "phone"
-                  ],
+                  "columns": ["phone"],
                   "name": "idx_users_phone",
                   "unique": true
                 }
               ],
               "primaryKey": {
-                "columns": [
-                  "id"
-                ]
+                "columns": ["id"]
               },
               "uniques": []
             }
@@ -6777,51 +6275,27 @@
           "valueSet": {
             "DriverRouteState": {
               "kind": "valueSet",
-              "values": [
-                "UNSET",
-                "ESTABLISHED"
-              ]
+              "values": ["UNSET", "ESTABLISHED"]
             },
             "DriverStatus": {
               "kind": "valueSet",
-              "values": [
-                "PENDING",
-                "APPROVED",
-                "SUSPENDED",
-                "REJECTED"
-              ]
+              "values": ["PENDING", "APPROVED", "SUSPENDED", "REJECTED"]
             },
             "PayStatus": {
               "kind": "valueSet",
-              "values": [
-                "PENDING",
-                "SUCCEEDED",
-                "FAILED",
-                "REFUNDED"
-              ]
+              "values": ["PENDING", "SUCCEEDED", "FAILED", "REFUNDED"]
             },
             "PayoutStatus": {
               "kind": "valueSet",
-              "values": [
-                "PENDING",
-                "PROCESSING",
-                "PAID",
-                "FAILED"
-              ]
+              "values": ["PENDING", "PROCESSING", "PAID", "FAILED"]
             },
             "RunStopType": {
               "kind": "valueSet",
-              "values": [
-                "PICKUP",
-                "DROPOFF"
-              ]
+              "values": ["PICKUP", "DROPOFF"]
             },
             "ScheduleLegType": {
               "kind": "valueSet",
-              "values": [
-                "DEPARTURE",
-                "PICKUP"
-              ]
+              "values": ["DEPARTURE", "PICKUP"]
             },
             "SubStatus": {
               "kind": "valueSet",
@@ -6836,10 +6310,7 @@
             },
             "SubType": {
               "kind": "valueSet",
-              "values": [
-                "ONE_WAY",
-                "ROUND_TRIP"
-              ]
+              "values": ["ONE_WAY", "ROUND_TRIP"]
             },
             "TripStatus": {
               "kind": "valueSet",
@@ -6853,10 +6324,7 @@
             },
             "TripType": {
               "kind": "valueSet",
-              "values": [
-                "DEPARTURE",
-                "PICKUP"
-              ]
+              "values": ["DEPARTURE", "PICKUP"]
             },
             "UserRole": {
               "kind": "valueSet",
@@ -6879,11 +6347,7 @@
             },
             "VerifyTier": {
               "kind": "valueSet",
-              "values": [
-                "BASIC",
-                "ENHANCED",
-                "ELITE"
-              ]
+              "values": ["BASIC", "ENHANCED", "ELITE"]
             }
           }
         },
@@ -6891,7 +6355,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "802a1be710051399c62b75b61b98ec6dc1415ca5ed41fb4601015296267f4ad7",
+    "storageHash": "031cf8fc8c99de5a470df726a72e99b7df7fd36c0ae361b2d908760ebdf48faa",
     "types": {
       "Geometry4326": {
         "codecId": "pg/geometry@1",

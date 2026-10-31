@@ -16,18 +16,7 @@ jest.mock("@routeride/config", () => ({
 }));
 
 const settings: DriverServiceAreaSettings = {
-  serviceArea: {
-    type: "Polygon" as const,
-    coordinates: [
-      [
-        [67, 24.8],
-        [67.1, 24.8],
-        [67.1, 24.9],
-        [67, 24.9],
-        [67, 24.8],
-      ],
-    ],
-  },
+  city: "PK-KHI",
   startingLocation: { type: "Point" as const, coordinates: [67.02, 24.82] },
   availability: [
     {
@@ -122,22 +111,20 @@ describe("ServiceAreaService", () => {
   });
 
   it("reads settings and offered windows in one database snapshot", async () => {
-    const query = jest
-      .fn()
-      .mockResolvedValue([
-        {
-          id: "driver",
-          service_area: settings.serviceArea,
-          starting_location: settings.startingLocation,
-          route_polyline: null,
-          route_state: "UNSET",
-          accepting_requests: true,
-          availability: settings.availability,
-          availability_version: 2,
-          roster_version: 3,
-          coverage_setup_required: false,
-        },
-      ]);
+    const query = jest.fn().mockResolvedValue([
+      {
+        id: "driver",
+        operating_city: settings.city,
+        starting_location: settings.startingLocation,
+        route_polyline: null,
+        route_state: "UNSET",
+        accepting_requests: true,
+        availability: settings.availability,
+        availability_version: 2,
+        roster_version: 3,
+        coverage_setup_required: false,
+      },
+    ]);
     const service = new ServiceAreaService({
       query,
     } as unknown as PrismaService);
@@ -152,9 +139,7 @@ describe("ServiceAreaService", () => {
   it("rejects coverage outside platform bounds before opening a transaction", async () => {
     const { service, query } = setup();
     const outside = structuredClone(settings);
-    if (!outside.serviceArea) throw new Error("Fixture must declare an area");
-    outside.serviceArea.coordinates[0]![0] = [65, 24.8];
-    outside.serviceArea.coordinates[0]![4] = [65, 24.8];
+    outside.startingLocation.coordinates = [65, 24.8];
     await expect(service.save("owner", outside)).rejects.toBeInstanceOf(
       UnprocessableEntityException,
     );

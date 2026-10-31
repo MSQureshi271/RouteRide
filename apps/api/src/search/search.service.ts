@@ -144,7 +144,7 @@ export class SearchService {
         }),
       )
       .digest("hex");
-    const policyVersion = `service-area-v2.1:${getEnv().MATCHING_CONFIG_VERSION}`;
+    const policyVersion = `city-v2.2:${getEnv().MATCHING_CONFIG_VERSION}`;
     const key = `search:v2:${policyVersion}:${hash}`;
     try {
       const cached = await this.redis.get(key);
@@ -180,7 +180,10 @@ export class SearchService {
       requestId,
     );
     if (upstream.policyVersion !== policyVersion) {
-      throw new ServiceUnavailableWithRetryException("Matching policy rollout is incomplete; retry shortly", 30);
+      throw new ServiceUnavailableWithRetryException(
+        "Matching policy rollout is incomplete; retry shortly",
+        30,
+      );
     }
     const ids = upstream.results.map((result) => result.driverProfileId);
     const profiles = ids.length

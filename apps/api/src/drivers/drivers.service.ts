@@ -237,7 +237,7 @@ export class DriversService {
         vehicle_colour, plate_number, seat_capacity, operating_days,
         base_price_cents, currency, status, verification_tier,
         acceptance_rate, created_at, updated_at,
-        (NOT coverage_setup_required AND service_area IS NOT NULL AND starting_location IS NOT NULL
+        (NOT coverage_setup_required AND operating_city = 'PK-KHI' AND starting_location IS NOT NULL
          AND EXISTS (SELECT 1 FROM driver_availability a WHERE a.driver_profile_id = driver_profiles.id))
         AS coverage_configured
       FROM driver_profiles

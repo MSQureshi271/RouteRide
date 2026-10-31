@@ -26,25 +26,12 @@ describe("service-area settings against PostGIS", () => {
   let service: ServiceAreaService;
   let created = false;
   const settings: DriverServiceAreaSettings = {
-    serviceArea: {
-      type: "Polygon",
-      coordinates: [
-        [
-          [67, 24.8],
-          [67.1, 24.8],
-          [67.1, 24.9],
-          [67, 24.9],
-          [67, 24.8],
-        ],
-      ],
-    },
+    city: "PK-KHI",
     startingLocation: { type: "Point", coordinates: [67.01, 24.8] },
     routeState: "UNSET",
     routePolyline: null,
     acceptingRequests: true,
-    availability: [
-      { day: 1, startTime: "06:00", endTime: "10:00" },
-    ],
+    availability: [{ day: 1, startTime: "06:00", endTime: "10:00" }],
   };
 
   beforeAll(async () => {
@@ -84,6 +71,12 @@ describe("service-area settings against PostGIS", () => {
       ALTER TABLE driver_availability DROP COLUMN leg_type;
       CREATE INDEX idx_driver_availability_day_window
         ON driver_availability(driver_profile_id,operating_day,window_start,window_end)`);
+    // Mirrors 20261027T1548_driver_operating_city, which is Prisma-native TypeScript.
+    await pool.query(`ALTER TABLE driver_profiles ADD COLUMN operating_city text;
+      UPDATE driver_profiles SET operating_city = 'PK-KHI';
+      ALTER TABLE driver_profiles DROP CONSTRAINT ck_driver_request_setup;
+      ALTER TABLE driver_profiles ADD CONSTRAINT ck_driver_request_setup CHECK
+        (NOT accepting_requests OR (NOT coverage_setup_required AND operating_city IS NOT NULL AND starting_location IS NOT NULL))`);
     const prisma = new PrismaService();
     prisma.pool = pool;
     service = new ServiceAreaService(prisma);
@@ -105,18 +98,20 @@ describe("service-area settings against PostGIS", () => {
     });
   });
 
-  it("rejects a self-intersecting area without modifying persisted coverage", async () => {
-    const invalid = structuredClone(settings);
-    if (!invalid.serviceArea) throw new Error("Fixture must declare an area");
-    invalid.serviceArea.coordinates = [
-      [
-        [67, 24.8],
-        [67.1, 24.9],
-        [67, 24.9],
-        [67.08, 24.8],
-        [67, 24.8],
-      ],
-    ];
+  it("rejects a self-intersecting route without modifying persisted settings", async () => {
+    const invalid: DriverServiceAreaSettings = {
+      ...settings,
+      routeState: "ESTABLISHED",
+      routePolyline: {
+        type: "LineString",
+        coordinates: [
+          [67, 24.8],
+          [67.1, 24.9],
+          [67, 24.9],
+          [67.1, 24.8],
+        ],
+      },
+    };
     await expect(service.save("fresh-owner", invalid)).rejects.toBeInstanceOf(
       UnprocessableEntityException,
     );
@@ -143,7 +138,7 @@ describe("service-area settings against PostGIS", () => {
     ).toEqual({ status: "ACTIVE" });
   });
 
-  it("rejects shrinking committed coverage or windows, including paused subscriptions", async () => {
+  it("rejects changing the start location or shrinking committed windows, including paused subscriptions", async () => {
     await pool!.query(
       "UPDATE subscriptions SET status='PAUSED' WHERE id='legacy-rider'",
     );
@@ -152,18 +147,11 @@ describe("service-area settings against PostGIS", () => {
     await expect(service.save("legacy-owner", shorter)).rejects.toBeInstanceOf(
       ConflictException,
     );
-    const smaller = structuredClone(settings);
-    if (!smaller.serviceArea) throw new Error("Fixture must declare an area");
-    smaller.serviceArea.coordinates = [
-      [
-        [67, 24.8],
-        [67.05, 24.8],
-        [67.05, 24.9],
-        [67, 24.9],
-        [67, 24.8],
-      ],
-    ];
-    await expect(service.save("legacy-owner", smaller)).rejects.toBeInstanceOf(
+    const moved: DriverServiceAreaSettings = {
+      ...settings,
+      startingLocation: { type: "Point", coordinates: [67.05, 24.85] },
+    };
+    await expect(service.save("legacy-owner", moved)).rejects.toBeInstanceOf(
       ConflictException,
     );
   });
