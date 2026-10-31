@@ -53,7 +53,7 @@ export const DriverLegAvailabilitySchema = z
 
 export const DriverServiceAreaSettingsSchema = z
   .object({
-    serviceArea: GeoPolygonSchema,
+    city: z.literal("PK-KHI"),
     startingLocation: GeoPointSchema,
     availability: z.array(DriverLegAvailabilitySchema).min(1).max(56),
     acceptingRequests: z.boolean(),
@@ -258,7 +258,11 @@ export const RequestSubscriptionV2Schema = z
     (value) => {
       const legs = value.legs.map((leg) => leg.legType);
       if (value.type !== "ROUND_TRIP")
-        return value.type === "ONE_WAY" && legs.length === 1 && legs[0] === "DEPARTURE";
+        return (
+          value.type === "ONE_WAY" &&
+          legs.length === 1 &&
+          legs[0] === "DEPARTURE"
+        );
       const departure = value.legs.find((leg) => leg.legType === "DEPARTURE");
       const pickup = value.legs.find((leg) => leg.legType === "PICKUP");
       return (

@@ -34,10 +34,31 @@ const fixture = JSON.parse(
 };
 
 describe("Service-area v2 contracts", () => {
-  it.each(fixture.settings)("validates settings: $id", ({ input, valid }) => {
-    expect(DriverServiceAreaSettingsSchema.safeParse(input).success).toBe(
-      valid,
-    );
+  it.each(
+    fixture.settings.filter(
+      ({ id }) =>
+        !["unclosed-polygon", "degenerate-polygon", "invalid-wgs84"].includes(
+          id,
+        ),
+    ),
+  )("validates settings: $id", ({ input, valid }) => {
+    const { serviceArea: _oldArea, ...rest } = input as Record<string, unknown>;
+    expect(
+      DriverServiceAreaSettingsSchema.safeParse({ ...rest, city: "PK-KHI" })
+        .success,
+    ).toBe(valid);
+  });
+  it("requires a supported city and no polygon", () => {
+    const { serviceArea: _oldArea, ...rest } = fixture.settings[0]!
+      .input as Record<string, unknown>;
+    expect(
+      DriverServiceAreaSettingsSchema.safeParse({ ...rest, city: "PK-KHI" })
+        .success,
+    ).toBe(true);
+    expect(
+      DriverServiceAreaSettingsSchema.safeParse({ ...rest, city: "OTHER" })
+        .success,
+    ).toBe(false);
   });
   it.each(fixture.discoveryRequests)(
     "validates discovery request: $id",
