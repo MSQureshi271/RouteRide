@@ -68,7 +68,8 @@ export default function AppLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          href: null,
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
         }}
       />
     </Tabs>

@@ -12,12 +12,7 @@
  */
 
 import React, { useState, useCallback } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { z } from "zod";
 import { ScreenHeader } from "../../../src/components/common/ScreenHeader";
@@ -56,11 +51,9 @@ export const SearchInputFormStateSchema = z
     selectedDays: z
       .array(z.number().int().min(0).max(6))
       .min(1, { message: "Please select at least one commute day" }),
-    departureTime: z
-      .string()
-      .regex(/^([01]\d|2[0-3]):[0-5]\d$/, {
-        message: "Departure time must be in 24h format (HH:mm)",
-      }),
+    departureTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, {
+      message: "Departure time must be in 24h format (HH:mm)",
+    }),
     pickupTime: z
       .string()
       .regex(/^([01]\d|2[0-3]):[0-5]\d$/, {
@@ -73,13 +66,14 @@ export const SearchInputFormStateSchema = z
       return data.tripType === "ROUND_TRIP"
         ? Boolean(
             data.departureTime &&
-              data.pickupTime &&
-              data.pickupTime > data.departureTime,
+            data.pickupTime &&
+            data.pickupTime > data.departureTime,
           )
         : data.pickupTime === undefined;
     },
     {
-      message: "Enter a departure time, and a later pickup time for round trips",
+      message:
+        "Enter a departure time, and a later pickup time for round trips",
       path: ["departureTime"],
     },
   );
@@ -133,6 +127,7 @@ export default function SearchInputScreen() {
 
   // Time Picker Modal state
   const [pickerModalVisible, setPickerModalVisible] = useState(false);
+  const [pickerSession, setPickerSession] = useState(0);
   const [activePickerType, setActivePickerType] = useState<
     "departure" | "pickup"
   >("departure");
@@ -195,11 +190,13 @@ export default function SearchInputScreen() {
   // Open modal pickers
   const openDeparturePicker = () => {
     setActivePickerType("departure");
+    setPickerSession((session) => session + 1);
     setPickerModalVisible(true);
   };
 
   const openPickupPicker = () => {
     setActivePickerType("pickup");
+    setPickerSession((session) => session + 1);
     setPickerModalVisible(true);
   };
 
@@ -246,11 +243,10 @@ export default function SearchInputScreen() {
         params: {
           riderId: query.riderId,
           day: String(query.day),
+          selectedDays: validationResult.data.selectedDays.join(","),
           departureTime: query.departureTime,
           subscriptionType: query.subscriptionType,
-          ...(query.pickupTime
-            ? { pickupTime: query.pickupTime }
-            : {}),
+          ...(query.pickupTime ? { pickupTime: query.pickupTime } : {}),
           ...(selectedRider ? { riderName: selectedRider.name } : {}),
           ...(selectedRider
             ? { pickupAddress: selectedRider.homeAddressText }
@@ -354,6 +350,7 @@ export default function SearchInputScreen() {
 
       {/* Interactive Time Picker Modal */}
       <TimePickerModal
+        key={pickerSession}
         visible={pickerModalVisible}
         title={
           activePickerType === "departure"

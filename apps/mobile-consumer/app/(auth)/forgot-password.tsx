@@ -128,7 +128,7 @@ export default function ForgotPasswordScreen() {
               variant="primary"
               role="consumer"
               loading={isSubmitting}
-              onPress={handleSubmit(onSubmit)}
+              onPress={() => handleSubmit(onSubmit)()}
               accessibilityLabel="Send reset code"
             >
               Send reset code

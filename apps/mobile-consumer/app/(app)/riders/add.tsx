@@ -142,7 +142,7 @@ export default function AddRiderScreen() {
               variant="primary"
               role="consumer"
               loading={isSubmitting}
-              onPress={handleSubmit(onSubmit as never)}
+              onPress={() => handleSubmit(onSubmit as never)()}
               accessibilityLabel="Add rider"
             >
               Add Rider

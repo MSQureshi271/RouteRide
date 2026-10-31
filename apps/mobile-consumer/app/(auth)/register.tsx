@@ -172,7 +172,7 @@ export default function RegisterScreen() {
               variant="primary"
               role="consumer"
               loading={isSubmitting}
-              onPress={handleSubmit(onSubmit)}
+              onPress={() => handleSubmit(onSubmit)()}
               accessibilityLabel="Create account"
             >
               Create account

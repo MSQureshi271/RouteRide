@@ -16,7 +16,6 @@
  *  11. Two-tier schema validation and contract transformation unit tests
  *  12. Time conversion utilities (to12Hour, to24Hour, formatTimeDisplay)
  */
-import React from "react";
 import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
 
 import SearchInputScreen, {
@@ -65,6 +64,35 @@ jest.mock("react-native-maps", () => {
     Marker: (props: any) => React.createElement(View, props),
   };
 });
+
+jest.mock(
+  "@quidone/react-native-wheel-picker",
+  () => {
+    const React = require("react");
+    const { Pressable, Text, View } = require("react-native");
+    return function MockWheel({ data, value, testID, onValueChanged }: any) {
+      const [position, setPosition] = React.useState(value);
+      return (
+        <View testID={testID}>
+          {data.map((item: any, index: number) => (
+            <Pressable
+              key={String(item.value)}
+              accessibilityLabel={`${testID === "wheel-hour" ? "Hour" : testID === "wheel-minute" ? "Minute" : "Period"} ${item.label}`}
+              accessibilityState={{ selected: position === item.value }}
+              onPress={() => {
+                setPosition(item.value);
+                onValueChanged({ item, index });
+              }}
+            >
+              <Text>{item.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      );
+    };
+  },
+  { virtual: true },
+);
 
 // Mock @routeride/ui API client
 const mockGet = jest.fn();
@@ -166,6 +194,16 @@ describe("SearchInputScreen (T1.11 Redesign)", () => {
     expect(getByTestId("route-preview-dest").props["children"]).toBe(
       "Karachi Grammar School",
     );
+    expect(getByTestId("route-preview-pickup").props["numberOfLines"]).toBe(1);
+    expect(getByTestId("route-preview-pickup").props["ellipsizeMode"]).toBe(
+      "tail",
+    );
+    expect(getByTestId("route-preview-dest").props["numberOfLines"]).toBe(1);
+    expect(getByTestId("route-preview-dest").props["ellipsizeMode"]).toBe(
+      "tail",
+    );
+    fireEvent.press(getByTestId("route-preview-edit-btn"));
+    expect(mockPush).toHaveBeenCalledWith("/(app)/riders");
 
     // Default round trip shows both Departure and Pickup rows
     expect(getByTestId("departure-time-row")).toBeTruthy();
@@ -236,19 +274,33 @@ describe("SearchInputScreen (T1.11 Redesign)", () => {
 
     // Tap Weekend preset -> Sat (6) and Sun (0) should be active
     fireEvent.press(getByTestId("preset-weekend"));
-    expect(getByTestId("day-chip-0").props["accessibilityState"]?.selected).toBe(true);
-    expect(getByTestId("day-chip-6").props["accessibilityState"]?.selected).toBe(true);
-    expect(getByTestId("day-chip-1").props["accessibilityState"]?.selected).toBe(false);
+    expect(
+      getByTestId("day-chip-0").props["accessibilityState"]?.selected,
+    ).toBe(true);
+    expect(
+      getByTestId("day-chip-6").props["accessibilityState"]?.selected,
+    ).toBe(true);
+    expect(
+      getByTestId("day-chip-1").props["accessibilityState"]?.selected,
+    ).toBe(false);
 
     // Tap Work preset -> Mon-Fri (1-5) active
     fireEvent.press(getByTestId("preset-work"));
-    expect(getByTestId("day-chip-1").props["accessibilityState"]?.selected).toBe(true);
-    expect(getByTestId("day-chip-5").props["accessibilityState"]?.selected).toBe(true);
-    expect(getByTestId("day-chip-0").props["accessibilityState"]?.selected).toBe(false);
+    expect(
+      getByTestId("day-chip-1").props["accessibilityState"]?.selected,
+    ).toBe(true);
+    expect(
+      getByTestId("day-chip-5").props["accessibilityState"]?.selected,
+    ).toBe(true);
+    expect(
+      getByTestId("day-chip-0").props["accessibilityState"]?.selected,
+    ).toBe(false);
 
     // Toggle individual day chip (e.g. Wednesday 3)
     fireEvent.press(getByTestId("day-chip-3"));
-    expect(getByTestId("day-chip-3").props["accessibilityState"]?.selected).toBe(false);
+    expect(
+      getByTestId("day-chip-3").props["accessibilityState"]?.selected,
+    ).toBe(false);
   });
 
   // ─── 7. Interactive TimePickerModal ─────────────────────────────────────────
@@ -265,19 +317,106 @@ describe("SearchInputScreen (T1.11 Redesign)", () => {
     fireEvent.press(getByTestId("departure-time-row"));
 
     // Select hour 9, minute 15, AM
-    fireEvent.press(getByTestId("time-picker-hour-9"));
-    fireEvent.press(getByTestId("time-picker-minute-15"));
-    fireEvent.press(getByTestId("time-picker-period-am"));
-
-    expect(getByTestId("time-picker-preview").props["children"]).toBe("09:15 AM");
+    fireEvent.press(
+      getByTestId("wheel-hour").findByProps({ accessibilityLabel: "Hour 9" }),
+    );
+    fireEvent.press(
+      getByTestId("wheel-minute").findByProps({
+        accessibilityLabel: "Minute 15",
+      }),
+    );
+    fireEvent.press(
+      getByTestId("wheel-period").findByProps({
+        accessibilityLabel: "Period AM",
+      }),
+    );
 
     // Confirm selection
     fireEvent.press(getByTestId("time-picker-confirm-btn"));
 
     // Departure time row displays the newly selected time
-    expect(getByTestId("departure-time-row").props["accessibilityLabel"]).toContain(
-      "09:15 AM",
+    expect(
+      getByTestId("departure-time-row").props["accessibilityLabel"],
+    ).toContain("09:15 AM");
+  });
+
+  it("discards unconfirmed wheel changes and restores pickup time on reopening", async () => {
+    mockGet.mockResolvedValueOnce({ data: MOCK_RIDERS });
+    const screen = render(<SearchInputScreen />);
+    await waitFor(() =>
+      expect(screen.getByTestId("pickup-time-row")).toBeTruthy(),
     );
+    fireEvent.press(screen.getByTestId("pickup-time-row"));
+    fireEvent.press(screen.getByLabelText("Hour 5"));
+    fireEvent.press(screen.getByLabelText("Close time picker"));
+    expect(
+      screen.getByTestId("pickup-time-row").props["accessibilityLabel"],
+    ).toContain("04:30 PM");
+    fireEvent.press(screen.getByTestId("pickup-time-row"));
+    expect(
+      screen.getByLabelText("Hour 4").props["accessibilityState"].selected,
+    ).toBe(true);
+    expect(
+      screen.getByLabelText("Minute 30").props["accessibilityState"].selected,
+    ).toBe(true);
+    expect(
+      screen.getByLabelText("Period PM").props["accessibilityState"].selected,
+    ).toBe(true);
+  });
+
+  it("opens each wheel at its own saved time when switching between legs", async () => {
+    mockGet.mockResolvedValueOnce({ data: MOCK_RIDERS });
+    const screen = render(<SearchInputScreen />);
+    await waitFor(() =>
+      expect(screen.getByTestId("departure-time-row")).toBeTruthy(),
+    );
+    fireEvent.press(screen.getByTestId("departure-time-row"));
+    expect(
+      screen.getByLabelText("Hour 8").props["accessibilityState"].selected,
+    ).toBe(true);
+    fireEvent.press(screen.getByLabelText("Hour 7"));
+    fireEvent.press(screen.getByTestId("time-picker-confirm-btn"));
+    fireEvent.press(screen.getByTestId("pickup-time-row"));
+    expect(
+      screen.getByLabelText("Hour 4").props["accessibilityState"].selected,
+    ).toBe(true);
+    expect(
+      screen.getByLabelText("Minute 30").props["accessibilityState"].selected,
+    ).toBe(true);
+    expect(
+      screen.getByLabelText("Period PM").props["accessibilityState"].selected,
+    ).toBe(true);
+    fireEvent.press(screen.getByTestId("time-picker-confirm-btn"));
+    fireEvent.press(screen.getByTestId("departure-time-row"));
+    expect(
+      screen.getByLabelText("Hour 7").props["accessibilityState"].selected,
+    ).toBe(true);
+    expect(
+      screen.getByLabelText("Minute 30").props["accessibilityState"].selected,
+    ).toBe(true);
+    expect(
+      screen.getByLabelText("Period AM").props["accessibilityState"].selected,
+    ).toBe(true);
+  });
+
+  it("dismisses unconfirmed time changes from the backdrop and Android back action", async () => {
+    mockGet.mockResolvedValueOnce({ data: MOCK_RIDERS });
+    const screen = render(<SearchInputScreen />);
+    await waitFor(() =>
+      expect(screen.getByTestId("departure-time-row")).toBeTruthy(),
+    );
+    fireEvent.press(screen.getByTestId("departure-time-row"));
+    fireEvent.press(screen.getByLabelText("Hour 7"));
+    fireEvent.press(screen.getByLabelText("Dismiss time picker"));
+    expect(
+      screen.getByTestId("departure-time-row").props["accessibilityLabel"],
+    ).toContain("08:30 AM");
+    fireEvent.press(screen.getByTestId("departure-time-row"));
+    fireEvent.press(screen.getByLabelText("Hour 6"));
+    fireEvent(screen.getByTestId("time-picker-modal"), "requestClose");
+    expect(
+      screen.getByTestId("departure-time-row").props["accessibilityLabel"],
+    ).toContain("08:30 AM");
   });
 
   // ─── 8. Successful Submission: Round Trip ──────────────────────────────────
@@ -299,6 +438,7 @@ describe("SearchInputScreen (T1.11 Redesign)", () => {
         params: {
           riderId: RIDER_1_ID,
           day: "1",
+          selectedDays: "1,2,3,4,5",
           departureTime: "08:30",
           subscriptionType: "ROUND_TRIP",
           pickupTime: "16:30",
@@ -332,6 +472,7 @@ describe("SearchInputScreen (T1.11 Redesign)", () => {
         params: {
           riderId: RIDER_1_ID,
           day: "1",
+          selectedDays: "1,2,3,4,5",
           departureTime: "08:30",
           subscriptionType: "ONE_WAY",
           riderName: "Sara Ahmed",

@@ -156,7 +156,7 @@ export default function ResetPasswordScreen() {
             variant="primary"
             role="consumer"
             loading={isSubmitting}
-            onPress={handleSubmit(onSubmit)}
+            onPress={() => handleSubmit(onSubmit)()}
             accessibilityLabel="Reset password"
           >
             Reset password

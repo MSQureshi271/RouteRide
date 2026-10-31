@@ -184,7 +184,7 @@ export default function EditRiderScreen() {
               variant="primary"
               role="consumer"
               loading={isSubmitting}
-              onPress={handleSubmit(onSubmit as never)}
+              onPress={() => handleSubmit(onSubmit as never)()}
               accessibilityLabel="Save changes"
             >
               Save Changes

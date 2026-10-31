@@ -9,7 +9,10 @@ export interface RoutePreviewCardProps {
   onEditPress?: () => void;
 }
 
-export function RoutePreviewCard({ rider, onEditPress }: RoutePreviewCardProps) {
+export function RoutePreviewCard({
+  rider,
+  onEditPress,
+}: RoutePreviewCardProps) {
   const router = useRouter();
 
   const handleEdit = () => {
@@ -23,60 +26,62 @@ export function RoutePreviewCard({ rider, onEditPress }: RoutePreviewCardProps) 
   return (
     <View style={styles.card} testID="route-preview-card">
       <Text style={styles.cardTitle}>Route Preview</Text>
+      <View style={styles.divider} />
 
-      <View style={styles.corridorContainer}>
-        {/* Timeline Indicator Column */}
-        <View style={styles.timelineColumn}>
-          <View style={styles.originRing}>
-            <View style={styles.originInner} />
+      <View style={styles.preview}>
+        <View style={styles.corridorContainer}>
+          <View
+            style={styles.timelineColumn}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            <View style={styles.originDot} />
+            <View style={styles.timelineLine} />
+            <View style={styles.destinationDot} />
           </View>
-          <View style={styles.dottedLine}>
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-          </View>
-          <View style={styles.destIconContainer}>
-            <Text style={styles.destEmoji}>🗺️</Text>
+
+          {/* Address Texts Column */}
+          <View style={styles.addressColumn}>
+            <View style={styles.addressBlock}>
+              <Text
+                style={styles.addressText}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                accessibilityLabel={`Pickup: ${rider?.homeAddressText ?? "Location not set"}`}
+                testID="route-preview-pickup"
+              >
+                {rider?.homeAddressText ?? "Pickup location not set"}
+              </Text>
+            </View>
+
+            <View style={styles.addressBlock}>
+              <Text
+                style={styles.addressText}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                accessibilityLabel={`Drop-off: ${rider?.destAddressText ?? "Location not set"}`}
+                testID="route-preview-dest"
+              >
+                {rider?.destAddressText ?? "Destination not set"}
+              </Text>
+            </View>
           </View>
         </View>
 
-        {/* Address Texts Column */}
-        <View style={styles.addressColumn}>
-          <View style={styles.addressBlock}>
-            <Text
-              style={styles.addressText}
-              numberOfLines={2}
-              testID="route-preview-pickup"
-            >
-              {rider?.homeAddressText ?? "Pickup location not set"}
-            </Text>
-          </View>
-
-          <View style={styles.addressBlock}>
-            <Text
-              style={styles.addressText}
-              numberOfLines={2}
-              testID="route-preview-dest"
-            >
-              {rider?.destAddressText ?? "Destination not set"}
-            </Text>
-          </View>
+        {/* Edit Action Link */}
+        <View style={styles.footerRow}>
+          <TouchableOpacity
+            onPress={handleEdit}
+            style={styles.editButton}
+            accessibilityRole="button"
+            accessibilityLabel="Edit route addresses"
+            testID="route-preview-edit-btn"
+            hitSlop={8}
+          >
+            <Text style={styles.editIcon}>✏️</Text>
+            <Text style={styles.editText}>Edit</Text>
+          </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Edit Action Link */}
-      <View style={styles.footerRow}>
-        <TouchableOpacity
-          onPress={handleEdit}
-          style={styles.editButton}
-          accessibilityRole="button"
-          accessibilityLabel="Edit corridor addresses"
-          testID="route-preview-edit-btn"
-          hitSlop={8}
-        >
-          <Text style={styles.editIcon}>✏️</Text>
-          <Text style={styles.editText}>Edit</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -85,16 +90,11 @@ export function RoutePreviewCard({ rider, onEditPress }: RoutePreviewCardProps) 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surfaceContainerLowest,
-    borderRadius: radii.md,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: colors.outlineVariant,
-    padding: spacing.md,
+    borderColor: colors.surfaceDim,
+    padding: spacing.sm,
     marginBottom: spacing.md,
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
   },
   cardTitle: {
     ...typography.headlineMd,
@@ -102,7 +102,19 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontWeight: "700",
     color: colors.onSurface,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
+    marginHorizontal: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.surfaceDim,
+    marginHorizontal: spacing.xs,
+  },
+  preview: {
+    backgroundColor: colors.surfaceContainerLowest,
+    borderRadius: radii.lg,
+    padding: spacing.md,
   },
   corridorContainer: {
     flexDirection: "row",
@@ -110,59 +122,35 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   timelineColumn: {
-    width: 28,
+    width: 32,
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
   },
-  originRing: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 3,
-    borderColor: colors.onSurface,
-    backgroundColor: colors.surfaceContainerLowest,
-    alignItems: "center",
-    justifyContent: "center",
+  originDot: {
+    width: 12,
+    height: 12,
+    borderRadius: radii.full,
+    backgroundColor: colors.routeBlue,
   },
-  originInner: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.surfaceContainerLowest,
-  },
-  dottedLine: {
+  timelineLine: {
     flex: 1,
-    justifyContent: "space-evenly",
-    alignItems: "center",
-    marginVertical: 4,
+    minHeight: 24,
+    width: 2,
+    backgroundColor: colors.routeBlue,
   },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.outlineVariant,
-  },
-  destIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: colors.surfaceContainerLow,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  destEmoji: {
-    fontSize: 14,
+  destinationDot: {
+    width: 12,
+    height: 12,
+    borderRadius: radii.full,
+    backgroundColor: colors.onSurface,
   },
   addressColumn: {
     flex: 1,
-    justifyContent: "space-between",
-    paddingVertical: 0,
     gap: spacing.md,
   },
   addressBlock: {
     justifyContent: "center",
-    minHeight: 28,
+    minHeight: 20,
   },
   addressText: {
     ...typography.bodyMd,
@@ -189,6 +177,6 @@ const styles = StyleSheet.create({
     ...typography.bodyMd,
     fontSize: 13,
     fontWeight: "600",
-    color: colors.onSurfaceVariant,
+    color: colors.routeBlue,
   },
 });

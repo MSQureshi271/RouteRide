@@ -141,7 +141,7 @@ export default function LoginScreen() {
               variant="primary"
               role="consumer"
               loading={isSubmitting}
-              onPress={handleSubmit(onSubmit)}
+              onPress={() => handleSubmit(onSubmit)()}
               accessibilityLabel="Sign in"
             >
               Sign in

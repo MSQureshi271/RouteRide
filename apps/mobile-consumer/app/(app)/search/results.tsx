@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScreenHeader } from "../../../src/components/common/ScreenHeader";
+import { formatTimeDisplay } from "../../../src/components/search/timeUtils";
+import { formatSelectedDays } from "../../../src/components/search/formatDays";
 import {
   DriverCard,
   Skeleton,
@@ -43,15 +45,10 @@ export default function SearchResultsScreen() {
       ? rawParams["departureTime"]
       : "07:30";
   const subscriptionType =
-    (rawParams["subscriptionType"] as "ONE_WAY" | "ROUND_TRIP") ??
-    "ONE_WAY";
+    (rawParams["subscriptionType"] as "ONE_WAY" | "ROUND_TRIP") ?? "ONE_WAY";
   const pickupTime =
     typeof rawParams["pickupTime"] === "string"
       ? rawParams["pickupTime"]
-      : undefined;
-  const riderName =
-    typeof rawParams["riderName"] === "string"
-      ? rawParams["riderName"]
       : undefined;
   const pickupAddress =
     typeof rawParams["pickupAddress"] === "string"
@@ -122,6 +119,15 @@ export default function SearchResultsScreen() {
 
   const dayIndex = Number(day);
   const dayName = DAY_NAMES[dayIndex] ?? "Weekday";
+  const selectedDaysParam = rawParams["selectedDays"];
+  const selectedDays =
+    typeof selectedDaysParam === "string" &&
+    /^[0-6](,[0-6])*$/.test(selectedDaysParam)
+      ? selectedDaysParam.split(",").map(Number)
+      : [dayIndex];
+  const daySummary = formatSelectedDays(selectedDays) || dayName;
+  const formatTime = (time: string) =>
+    formatTimeDisplay(time).replace(/^0/, "");
 
   return (
     <View style={styles.container}>
@@ -143,7 +149,7 @@ export default function SearchResultsScreen() {
             scheduleLabel={`${dayName} at ${departureTime}${pickupTime ? ` and ${pickupTime}` : ""}`}
             onReview={() =>
               router.push({
-                pathname: "/(app)/drivers/[id]",
+                pathname: "/(app)/search/drivers/[id]",
                 params: { ...rawParams, id: driver.driverProfileId },
               })
             }
@@ -152,38 +158,79 @@ export default function SearchResultsScreen() {
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         ListHeaderComponent={
           <>
-            {/* Search Query Summary Card */}
             <View style={styles.summaryCard}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>PASSENGER</Text>
-                <Text style={styles.summaryValue}>
-                  {riderName ?? "Selected Rider"}
-                </Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>SCHEDULE</Text>
-                <Text style={styles.summaryValue}>
-                  {dayName} �{" "}
-                  {subscriptionType === "ROUND_TRIP"
-                    ? `${departureTime} & ${pickupTime ?? ""}`
-                    : departureTime}{" "}
-                  ({subscriptionType})
-                </Text>
-              </View>
-              {(pickupAddress || destAddress) && (
-                <>
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.routePreview}>
-                    <Text style={styles.routePoint} numberOfLines={1}>
-                      ?? {pickupAddress ?? "Pickup"}
-                    </Text>
-                    <Text style={styles.routePoint} numberOfLines={1}>
-                      ?? {destAddress ?? "Destination"}
+              <View style={styles.summaryInner}>
+                <View style={styles.summaryRow}>
+                  <View
+                    style={styles.iconColumn}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                  >
+                    <View style={styles.calendarIcon}>
+                      <View style={styles.calendarLine} />
+                    </View>
+                  </View>
+                  <Text style={styles.summaryLabel}>Days</Text>
+                  <View style={styles.timeValues}>
+                    <Text style={styles.summaryValue}>{daySummary}</Text>
+                  </View>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryRow}>
+                  <View
+                    style={styles.iconColumn}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                  >
+                    <View style={styles.clockIcon}>
+                      <View style={styles.clockHand} />
+                    </View>
+                  </View>
+                  <Text style={styles.summaryLabel}>Time</Text>
+                  <View style={styles.timeValues}>
+                    <Text style={styles.summaryValue}>
+                      {formatTime(departureTime)}
+                      {subscriptionType === "ROUND_TRIP" && pickupTime
+                        ? ` – ${formatTime(pickupTime)}`
+                        : ""}
                     </Text>
                   </View>
-                </>
-              )}
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.routePreview}>
+                  <View
+                    style={styles.timeline}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                  >
+                    <View style={styles.originDot} />
+                    <View style={styles.timelineLine} />
+                    <View style={styles.destinationDot} />
+                  </View>
+                  <View style={styles.routeDetails}>
+                    <View>
+                      <Text
+                        style={styles.routePoint}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        accessibilityLabel={`Pickup: ${pickupAddress || "Address unavailable"}`}
+                      >
+                        {pickupAddress || "Address unavailable"}
+                      </Text>
+                    </View>
+                    <View>
+                      <Text
+                        style={styles.routePoint}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        accessibilityLabel={`Drop-off: ${destAddress || "Address unavailable"}`}
+                      >
+                        {destAddress || "Address unavailable"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
             </View>
 
             {/* Content States */}
@@ -229,7 +276,13 @@ export default function SearchResultsScreen() {
 
             {!loading && !error && data && data.results.length === 0 && (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyEmoji}>????</Text>
+                <Text
+                  style={styles.emptyEmoji}
+                  accessible={false}
+                  importantForAccessibility="no"
+                >
+                  {"\u{1F50D}"}
+                </Text>
                 <Text style={styles.emptyTitle}>No Drivers Available</Text>
                 <Text style={styles.emptySubtitle}>
                   No verified drivers currently offer coverage and availability
@@ -258,11 +311,16 @@ export default function SearchResultsScreen() {
             )}
 
             {!loading && !error && data && data.results.length > 0 && (
-              <Text style={styles.countText} accessibilityLiveRegion="polite">
-                {data.pagination.total} available driver
-                {data.pagination.total === 1 ? "" : "s"}. Best commute matches
-                appear first. Page {data.pagination.page}.
-              </Text>
+              <View>
+                <Text style={styles.resultsHeading} accessibilityRole="header">
+                  Drivers Found
+                </Text>
+                <Text style={styles.countText} accessibilityLiveRegion="polite">
+                  {data.pagination.total} available driver
+                  {data.pagination.total === 1 ? "" : "s"}. Best commute matches
+                  appear first. Page {data.pagination.page}.
+                </Text>
+              </View>
             )}
           </>
         }
@@ -290,7 +348,7 @@ export default function SearchResultsScreen() {
                 </TouchableOpacity>
               )}
             </View>
-          ) : null
+          ) : undefined
         }
       />
     </View>
@@ -308,40 +366,115 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   summaryCard: {
-    backgroundColor: colors.surfaceContainerLow,
-    borderRadius: radii.md,
-    padding: spacing.md,
+    borderRadius: radii.xl,
+    padding: spacing.sm,
     marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.outlineVariant,
+    borderColor: colors.surfaceDim,
+  },
+  summaryInner: {
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   summaryRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 2,
+    minHeight: 52,
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  iconColumn: {
+    width: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  calendarIcon: {
+    width: 22,
+    height: 22,
+    borderWidth: 2,
+    borderColor: colors.onSurface,
+    borderRadius: 4,
+  },
+  calendarLine: {
+    borderTopWidth: 2,
+    borderColor: colors.onSurface,
+    marginTop: 5,
+  },
+  clockIcon: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: colors.onSurface,
+    borderRadius: radii.full,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clockHand: {
+    width: 7,
+    height: 9,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: colors.onSurface,
+    marginLeft: 5,
+    marginBottom: 4,
   },
   summaryLabel: {
-    ...typography.labelCaps,
+    ...typography.bodyMd,
     color: colors.onSurfaceVariant,
+    width: 48,
   },
   summaryValue: {
     ...typography.bodyMd,
     fontWeight: "600",
     color: colors.onSurface,
+    flexShrink: 1,
+  },
+  timeValues: {
+    flex: 1,
+    gap: spacing.xs,
   },
   summaryDivider: {
     height: 1,
-    backgroundColor: colors.outlineVariant,
-    marginVertical: spacing.xs,
+    backgroundColor: colors.surfaceDim,
   },
   routePreview: {
-    gap: 4,
+    flexDirection: "row",
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
+  },
+  timeline: {
+    width: 32,
+    alignItems: "center",
+    paddingVertical: spacing.xs,
+  },
+  originDot: {
+    width: 12,
+    height: 12,
+    borderRadius: radii.full,
+    backgroundColor: colors.routeBlue,
+  },
+  timelineLine: {
+    flex: 1,
+    minHeight: 24,
+    width: 2,
+    backgroundColor: colors.routeBlue,
+  },
+  destinationDot: {
+    width: 12,
+    height: 12,
+    borderRadius: radii.full,
+    backgroundColor: colors.onSurface,
+  },
+  routeDetails: {
+    flex: 1,
+    gap: spacing.md,
   },
   routePoint: {
     ...typography.bodyMd,
-    fontSize: 13,
-    color: colors.onSurfaceVariant,
+    color: colors.onSurface,
+    fontWeight: "600",
   },
   stateContainer: {
     paddingVertical: spacing.xxl,
@@ -416,6 +549,11 @@ const styles = StyleSheet.create({
     ...typography.bodyMd,
     fontSize: 12,
     fontWeight: "600",
+    color: colors.onSurfaceVariant,
+    marginBottom: spacing.xs,
+  },
+  resultsHeading: {
+    ...typography.headlineMd,
     color: colors.onSurfaceVariant,
     marginBottom: spacing.xs,
   },

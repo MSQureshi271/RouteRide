@@ -1,6 +1,6 @@
 import React from "react";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
-import DriverProfileScreen from "../app/(app)/drivers/[id]";
+import DriverProfileScreen from "../app/(app)/search/drivers/[id]";
 
 jest.mock("react-native-maps", () => ({
   __esModule: true,
@@ -118,7 +118,10 @@ describe("Public driver profile screen", () => {
       expect(screen.getByText("Previous reviews")).toBeTruthy(),
     );
     expect(mockGet).toHaveBeenLastCalledWith(expect.any(String), {
-      params: expect.objectContaining({ reviewsPage: "2", departureTime: "07:30" }),
+      params: expect.objectContaining({
+        reviewsPage: "2",
+        departureTime: "07:30",
+      }),
     });
   });
   it("handles changed availability and retries without showing a send action", async () => {

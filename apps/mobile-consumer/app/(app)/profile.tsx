@@ -101,103 +101,105 @@ export default function ConsumerProfileScreen() {
           style={styles.flex}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* User info */}
-          <View style={styles.userCard}>
-            <View style={styles.userAvatar}>
-              <Text style={styles.userAvatarText}>
-                {user?.fullName?.charAt(0).toUpperCase() ?? "U"}
-              </Text>
+          <ScrollView
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* User info */}
+            <View style={styles.userCard}>
+              <View style={styles.userAvatar}>
+                <Text style={styles.userAvatarText}>
+                  {user?.fullName?.charAt(0).toUpperCase() ?? "U"}
+                </Text>
+              </View>
+              <View>
+                <Text style={styles.userName}>
+                  {user?.fullName ?? "Parent"}
+                </Text>
+                <Text style={styles.userPhone}>{user?.phone ?? ""}</Text>
+              </View>
             </View>
-            <View>
-              <Text style={styles.userName}>{user?.fullName ?? "Parent"}</Text>
-              <Text style={styles.userPhone}>{user?.phone ?? ""}</Text>
+
+            {/* Emergency contact section */}
+            <Text style={styles.sectionLabel}>Emergency Contact</Text>
+            <Text style={styles.sectionHint}>
+              This person will be contacted if there's an urgent situation
+              involving your rider.
+            </Text>
+
+            {serverError && (
+              <View
+                style={styles.errorBanner}
+                accessibilityRole="alert"
+                accessible
+              >
+                <Text style={styles.errorText}>{serverError}</Text>
+              </View>
+            )}
+
+            {saveSuccess && (
+              <View
+                style={styles.successBanner}
+                accessibilityLiveRegion="polite"
+                accessible
+              >
+                <Text style={styles.successText}>
+                  ✓ Profile saved successfully
+                </Text>
+              </View>
+            )}
+
+            <Input
+              label="Emergency contact name"
+              inputId="profile-emergency-name"
+              placeholder="Amina Khan (Mother)"
+              autoComplete="name"
+              error={errors.emergencyContactName?.message}
+              value={watch("emergencyContactName") ?? ""}
+              onChangeText={(t) => {
+                setSaveSuccess(false);
+                setValue("emergencyContactName", t, { shouldValidate: true });
+              }}
+            />
+
+            <Input
+              label="Emergency contact phone"
+              inputId="profile-emergency-phone"
+              variant="phone"
+              placeholder="+923001234567"
+              keyboardType="phone-pad"
+              hint="E.164 format, e.g. +923001234567"
+              error={errors.emergencyContactPhone?.message}
+              value={watch("emergencyContactPhone") ?? ""}
+              onChangeText={(t) => {
+                setSaveSuccess(false);
+                setValue("emergencyContactPhone", t, { shouldValidate: true });
+              }}
+            />
+
+            <View style={styles.actions}>
+              <Button
+                variant="primary"
+                role="consumer"
+                loading={isSubmitting}
+                onPress={() => handleSubmit(onSubmit as never)()}
+                accessibilityLabel="Save profile"
+              >
+                Save Profile
+              </Button>
+
+              <Button
+                variant="secondary"
+                role="consumer"
+                onPress={() => logout()}
+                accessibilityLabel="Log out"
+                style={styles.logoutBtn}
+              >
+                Log out
+              </Button>
             </View>
-          </View>
-
-          {/* Emergency contact section */}
-          <Text style={styles.sectionLabel}>Emergency Contact</Text>
-          <Text style={styles.sectionHint}>
-            This person will be contacted if there's an urgent situation
-            involving your rider.
-          </Text>
-
-          {serverError && (
-            <View
-              style={styles.errorBanner}
-              accessibilityRole="alert"
-              accessible
-            >
-              <Text style={styles.errorText}>{serverError}</Text>
-            </View>
-          )}
-
-          {saveSuccess && (
-            <View
-              style={styles.successBanner}
-              accessibilityLiveRegion="polite"
-              accessible
-            >
-              <Text style={styles.successText}>
-                ✓ Profile saved successfully
-              </Text>
-            </View>
-          )}
-
-          <Input
-            label="Emergency contact name"
-            inputId="profile-emergency-name"
-            placeholder="Amina Khan (Mother)"
-            autoComplete="name"
-            error={errors.emergencyContactName?.message}
-            value={watch("emergencyContactName") ?? ""}
-            onChangeText={(t) => {
-              setSaveSuccess(false);
-              setValue("emergencyContactName", t, { shouldValidate: true });
-            }}
-          />
-
-          <Input
-            label="Emergency contact phone"
-            inputId="profile-emergency-phone"
-            variant="phone"
-            placeholder="+923001234567"
-            keyboardType="phone-pad"
-            hint="E.164 format, e.g. +923001234567"
-            error={errors.emergencyContactPhone?.message}
-            value={watch("emergencyContactPhone") ?? ""}
-            onChangeText={(t) => {
-              setSaveSuccess(false);
-              setValue("emergencyContactPhone", t, { shouldValidate: true });
-            }}
-          />
-
-          <View style={styles.actions}>
-            <Button
-              variant="primary"
-              role="consumer"
-              loading={isSubmitting}
-              onPress={handleSubmit(onSubmit as never)}
-              accessibilityLabel="Save profile"
-            >
-              Save Profile
-            </Button>
-
-            <Button
-              variant="secondary"
-              role="consumer"
-              onPress={() => logout()}
-              accessibilityLabel="Log out"
-              style={styles.logoutBtn}
-            >
-              Log out
-            </Button>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   );

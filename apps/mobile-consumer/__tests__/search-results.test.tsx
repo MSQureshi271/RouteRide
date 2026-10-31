@@ -7,15 +7,18 @@ afterEach(() => jest.useRealTimers());
 const mockGet = jest.fn();
 const mockBack = jest.fn();
 const mockPush = jest.fn();
+const mockParams: Record<string, string> = {
+  riderId: "550e8400-e29b-41d4-a716-446655440000",
+  day: "1",
+  departureTime: "07:30",
+  subscriptionType: "ONE_WAY",
+  riderName: "Example Rider",
+  pickupAddress: "Sakhi Hassan, Karachi",
+  destAddress: "Clifton Block 2, Karachi",
+};
 jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockBack, push: mockPush }),
-  useLocalSearchParams: () => ({
-    riderId: "550e8400-e29b-41d4-a716-446655440000",
-    day: "1",
-    departureTime: "07:30",
-    subscriptionType: "ONE_WAY",
-    riderName: "Example Rider",
-  }),
+  useLocalSearchParams: () => mockParams,
 }));
 jest.mock("@routeride/ui", () => ({
   ...jest.requireActual("@routeride/ui"),
@@ -55,6 +58,51 @@ const response = (results: unknown[], page = 1, total = 1) => ({
 });
 describe("Service-area driver results", () => {
   beforeEach(() => jest.clearAllMocks());
+  it("summarizes the searched day, time, and endpoints", async () => {
+    mockGet.mockResolvedValue(response([candidate]));
+    const screen = render(<SearchResultsScreen />);
+    await waitFor(() => expect(screen.getByText("Drivers Found")).toBeTruthy());
+    expect(screen.getByText("Mon")).toBeTruthy();
+    expect(screen.getByText("7:30 AM")).toBeTruthy();
+    expect(
+      screen.getByText("Sakhi Hassan, Karachi").props["numberOfLines"],
+    ).toBe(1);
+    expect(
+      screen.getByText("Clifton Block 2, Karachi").props["numberOfLines"],
+    ).toBe(1);
+  });
+  it("shows departure and pickup times for a round trip", async () => {
+    mockParams["subscriptionType"] = "ROUND_TRIP";
+    mockParams["pickupTime"] = "16:30";
+    mockGet.mockResolvedValue(response([]));
+    try {
+      const screen = render(<SearchResultsScreen />);
+      await waitFor(() =>
+        expect(screen.getByText("No Drivers Available")).toBeTruthy(),
+      );
+      expect(screen.getByText("7:30 AM – 4:30 PM")).toBeTruthy();
+    } finally {
+      mockParams["subscriptionType"] = "ONE_WAY";
+      delete mockParams["pickupTime"];
+    }
+  });
+  it("shows grouped selected days and searches the selected primary day", async () => {
+    mockParams["selectedDays"] = "1,2,3,6,0";
+    mockGet.mockResolvedValue(response([]));
+    try {
+      const screen = render(<SearchResultsScreen />);
+      await waitFor(() =>
+        expect(screen.getByText("No Drivers Available")).toBeTruthy(),
+      );
+      expect(screen.getByText("Mon–Wed, Sat–Sun")).toBeTruthy();
+      expect(screen.queryByText("Results for Monday")).toBeNull();
+      expect(mockGet).toHaveBeenCalledWith("/drivers/search", {
+        params: expect.objectContaining({ day: "1" }),
+      });
+    } finally {
+      delete mockParams["selectedDays"];
+    }
+  });
   it("honestly labels a route-free driver and retains commute context during review", async () => {
     mockGet.mockResolvedValue(response([candidate]));
     const screen = render(<SearchResultsScreen />);
@@ -65,7 +113,7 @@ describe("Service-area driver results", () => {
     expect(screen.getByText("New driver")).toBeTruthy();
     fireEvent.press(screen.getByText("Review driver"));
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/(app)/drivers/[id]",
+      pathname: "/(app)/search/drivers/[id]",
       params: expect.objectContaining({
         id: candidate.driverProfileId,
         riderId: "550e8400-e29b-41d4-a716-446655440000",
