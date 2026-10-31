@@ -72,9 +72,10 @@ def test_invalid_requests(updates: dict[str, object]) -> None:
         request(**updates)
 
 
-def test_sql_requires_declared_area_and_has_no_corridor_veto() -> None:
-    assert DISCOVERY_SQL.count("ST_Covers") >= 2
-    assert "ST_Covers(dp.service_area::geometry" in DISCOVERY_SQL
+def test_sql_filters_by_operating_city_and_has_no_corridor_veto() -> None:
+    assert "dp.operating_city = 'PK-KHI'" in DISCOVERY_SQL
+    assert "service_area" not in DISCOVERY_SQL
+    assert "ST_Covers" not in DISCOVERY_SQL
     assert "ST_DWithin" not in DISCOVERY_SQL
     assert "ST_LineLocatePoint" not in DISCOVERY_SQL
     assert "driver_availability" in DISCOVERY_SQL

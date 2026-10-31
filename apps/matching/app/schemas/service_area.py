@@ -62,9 +62,9 @@ class LegAvailability(BoundaryModel):
 
 
 class DriverServiceAreaSettings(BoundaryModel):
-    serviceArea: Polygon
+    city: Literal["PK-KHI"]
     startingLocation: Point
-    availability: list[LegAvailability] = Field(min_length=1, max_length=28)
+    availability: list[LegAvailability] = Field(min_length=1, max_length=56)
     acceptingRequests: bool
     routeState: Literal["UNSET", "ESTABLISHED"]
     routePolyline: LineString | None

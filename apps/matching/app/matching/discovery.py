@@ -1,4 +1,4 @@
-"""Read-only v2 discovery: coverage authorizes browsing, score orders suggestions.
+"""Read-only v2 discovery: operating city filters, score orders suggestions.
 
 Detailed road-time feasibility is deliberately unknown during search. Matching
 never makes synchronous provider calls here and never reserves a seat.
@@ -28,7 +28,7 @@ from app.schemas.discovery import (
     DiscoveryResponse,
 )
 
-POLICY_VERSION = f"service-area-v2.1:{settings.MATCHING_CONFIG_VERSION}"
+POLICY_VERSION = f"city-v2.2:{settings.MATCHING_CONFIG_VERSION}"
 
 # A single query gives one consistent read snapshot. Unlike v1 this query has no
 # distance/direction veto or top-N truncation. Full-run windows exclude capacity
@@ -43,8 +43,7 @@ WITH requested_legs AS (
  WHERE dp.status = 'APPROVED' AND dp.accepting_requests
    AND NOT dp.coverage_setup_required
    AND dp.starting_location IS NOT NULL
-   AND ST_Covers(dp.service_area::geometry, ST_SetSRID(ST_MakePoint($1,$2),4326))
-   AND ST_Covers(dp.service_area::geometry, ST_SetSRID(ST_MakePoint($3,$4),4326))
+   AND dp.operating_city = 'PK-KHI'
    AND ((dp.route_state = 'UNSET' AND dp.route_polyline IS NULL)
      OR (dp.route_state = 'ESTABLISHED' AND dp.route_polyline IS NOT NULL
        AND NOT ST_IsEmpty(dp.route_polyline::geometry)
