@@ -22,11 +22,6 @@
         "UIBackgroundModes": ["location", "fetch", "remote-notification"]
       }
     },
-    "androidStatusBar": {
-      "barStyle": "dark-content",
-      "backgroundColor": "#ffffff",
-      "translucent": false
-    },
     "android": {
       "package": "com.routeride.driver",
       "adaptiveIcon": {
@@ -39,12 +34,16 @@
         "android.permission.FOREGROUND_SERVICE"
       ]
     },
+    "web": {
+      "output": "static"
+    },
     "plugins": [
-      "expo-router",
+      ["expo-router", { "apiRoutes": true }],
       "expo-secure-store",
       "expo-font",
       ["expo-task-manager", {}],
-      "expo-splash-screen"
+      "expo-splash-screen",
+      ["expo-status-bar", { "style": "dark", "hidden": false }]
     ],
     "experiments": {
       "typedRoutes": true

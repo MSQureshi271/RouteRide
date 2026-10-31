@@ -14,14 +14,8 @@
  *  - The whole component's accessibilityLabel changes as digits are entered
  */
 import React, { useRef } from "react";
-import {
-  NativeSyntheticEvent,
-  StyleSheet,
-  Text,
-  TextInput,
-  TextInputKeyPressEventData,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
+import type { TextInputInstance, TextInputKeyPressEvent } from "react-native";
 import { colors, radii, spacing, typography } from "../tokens";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -51,7 +45,7 @@ export function OtpInput({
   const digits = value.split("").slice(0, length);
   while (digits.length < length) digits.push("");
 
-  const refs = useRef<(TextInput | null)[]>([]);
+  const refs = useRef<(TextInputInstance | null)[]>([]);
 
   function handleChange(text: string, index: number) {
     // Handle paste of full code
@@ -73,10 +67,7 @@ export function OtpInput({
     }
   }
 
-  function handleKeyPress(
-    e: NativeSyntheticEvent<TextInputKeyPressEventData>,
-    index: number,
-  ) {
+  function handleKeyPress(e: TextInputKeyPressEvent, index: number) {
     if (e.nativeEvent.key === "Backspace" && !digits[index] && index > 0) {
       const next = [...digits];
       next[index - 1] = "";

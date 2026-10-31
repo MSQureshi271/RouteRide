@@ -37,6 +37,7 @@ export interface PlaceSearchInputProps {
   label: string;
   placeholder?: string | undefined;
   onLocationSelected: (location: SelectedLocation) => void;
+  onQueryChange?: (() => void) | undefined;
   disabled?: boolean | undefined;
   testID?: string | undefined;
   hint?: string | undefined;
@@ -61,6 +62,7 @@ export function PlaceSearchInput({
   label,
   placeholder = "Search location or area (e.g. DHA, Clifton)",
   onLocationSelected,
+  onQueryChange,
   disabled = false,
   testID = "place-search-input",
   hint,
@@ -126,6 +128,7 @@ export function PlaceSearchInput({
   );
 
   const handleTextChange = (text: string) => {
+    onQueryChange?.();
     setQuery(text);
     setErrorMessage(null);
 

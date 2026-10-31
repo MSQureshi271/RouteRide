@@ -20,27 +20,23 @@
         "NSLocationWhenInUseUsageDescription": "RouteRide uses your location to show nearby routes."
       }
     },
-    "androidStatusBar": {
-      "barStyle": "dark-content",
-      "backgroundColor": "#ffffff",
-      "translucent": false
-    },
     "android": {
       "package": "com.routeride.consumer",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0b1c30"
       },
-      "permissions": [
-        "android.permission.ACCESS_FINE_LOCATION"
-      ]
+      "permissions": ["android.permission.ACCESS_FINE_LOCATION"]
+    },
+    "web": {
+      "output": "static"
     },
     "plugins": [
-      "expo-router",
+      ["expo-router", { "apiRoutes": true }],
       "expo-secure-store",
       "expo-font",
       "expo-splash-screen",
-      "expo-status-bar"
+      ["expo-status-bar", { "style": "dark", "hidden": false }]
     ],
     "experiments": {
       "typedRoutes": true
