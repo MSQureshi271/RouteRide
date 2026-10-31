@@ -93,3 +93,7 @@ pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# ─── Local scratch / tooling caches ───────────────────────────────────────────
+scratch/
+.pnpm-store/
