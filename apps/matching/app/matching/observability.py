@@ -29,7 +29,7 @@ feasibility_decisions = meter.create_counter("matching.feasibility.decisions", u
 
 def record_discovery_decision(subscription_type: str, *, total: int, route_free: int, duration_ms: float) -> None:
     """Record available supply without treating low recommendation fit as exclusion."""
-    attributes = {"subscription_type": subscription_type, "has_matches": total > 0}
+    attributes: dict[str, str | bool] = {"subscription_type": subscription_type, "has_matches": total > 0}
     discovery_requests.add(1, attributes)
     discovery_duration.record(duration_ms, {"subscription_type": subscription_type})
     logger.info("matching.discovery.decision", subscription_type=subscription_type,
