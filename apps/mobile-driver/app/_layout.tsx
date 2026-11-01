@@ -25,7 +25,7 @@ import { JetBrainsMono_500Medium } from "@expo-google-fonts/jetbrains-mono";
 import Constants from "expo-constants";
 import { Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, type JSX } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { initApiClient, useAuthStore } from "@routeride/ui";
@@ -90,7 +90,7 @@ function AuthBootstrap({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export default function RootLayout() {
+export default function RootLayout(): JSX.Element | null {
   const [fontsLoaded] = useFonts({
     "Manrope-Regular": Manrope_400Regular,
     "Manrope-SemiBold": Manrope_600SemiBold,
