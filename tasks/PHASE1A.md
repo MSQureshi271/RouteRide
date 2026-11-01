@@ -667,8 +667,7 @@ Moved to Checkpoint 1-B (rescoped 2026-11-01; struck-through text is the origina
 
 Still open, not gating 1-A:
 
-- **CI typecheck:** the first CI run failed `@routeride/mobile-driver` `typecheck` with TS2883 on the `AuthLayout`, `OnboardingLayout` and `RootLayout` default exports. Not yet reproduced locally; fix awaiting approval.
-- **CI on Node 22 / Python 3.12:** a green run is still needed.
+- **CI: green.** The `@routeride/mobile-driver` TS2883 fix (layout return types) and the matching mypy fix (`078e75c`) were merged through PR #1. The product owner reports the full CI run passing, including Node 22 / Python 3.12.
 - **Migration rollout:** the pending-request and operating-city migrations are applied only through the CD pipeline, and its staging job has no migration step (see `tasks/T1.13-T1.14-progress.md`, "Migration rollout"). Deferred by the product owner.
 - **Doubt-driven review:** findings F1–F7 need owner decisions. None blocks 1-A.
 
