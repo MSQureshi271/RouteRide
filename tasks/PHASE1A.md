@@ -653,21 +653,24 @@ graph TD
 - [x] Matching service DB role is verified read-only. _(`tests/test_readonly_role.py`: SELECT allowed; INSERT/UPDATE/DELETE/TRUNCATE/DDL denied on all 11 matching tables; verified red by temporarily granting INSERT)_
 - [x] Internal API contract (`/internal/v1/matching/search`) is versioned, includes `afternoonTime`, and documented. _(`afternoonTime` was renamed `pickupTime` in the contract, Zod and Pydantic both require it for ROUND_TRIP and are tested; documented in `docs/SPEC-route-matching.md`; v2 is `/internal/v2/matching/search`)_
 - [x] Doubt-driven review completed on the eligibility filter set. _([review](PHASE1A-eligibility-doubt-review.md), AI-performed on 2026-10-31; human sign-off recommended; open findings F1–F7 need owner decisions)_
-- [ ] ~~T1.14 atomic revalidation proves search results are advisory, not reservations.~~ **Replaced by:** search and pending requests reserve nothing, proven for creation by the T1.14 non-reservation tests and the 2026-10-31 live check (no billing, runs, assignments or slots; seat capacity and roster versions unchanged); and proven for acceptance by **T1.16** (atomic acceptance) and **T1.17** (concurrency proof: 50 acceptances for one seat, first-acceptance races, cross-driver duplicate rider). Close when T1.17 passes.
-- [ ] ~~T1.14 serialization retry is tested (AD-12).~~ **Replaced by:** the amended retry rule in **T1.16**: lock the driver and rider commitment rows in a consistent order inside a `SERIALIZABLE` transaction, retry at most three times after the initial attempt on `SQLSTATE 40001` with jitter, and return `409 RACE_CONFLICT` when retries are exhausted or the proposal is stale (not `ELIGIBILITY_CHANGED`). Needs a bounded-retry test in T1.16. Close when that test passes.
-- [ ] ~~Cross-language eligibility test vectors (`packages/contracts/test-vectors/eligibility.json`) pass in both Python and NestJS (AD-11).~~ **Replaced by:** shared fixtures for the amended rules. `packages/contracts/test-vectors/service-area-v2.json` is already used by the Zod tests (`packages/contracts/src/service-area.test.ts`) and the Python tests (`apps/matching/tests/test_service_area_contracts.py`). Still to do: add acceptance-time vectors (discovery, ranking and feasibility cases) and run them in the NestJS acceptance service as part of **T1.16**. `eligibility.json` stays as the historical v1 fixture and passes in Python and contracts only. Close when T1.16 runs the shared vectors.
 - [x] Capacity is day+leg-aware distinct subscription accounting (AD-10).
 - [x] Proximity uses independent normalization — boundary tests match the "Boundary Test Matrix". _(`test_proximity_score_boundary_matrix` passes)_
 - [x] Search cache key excludes `riderId` and includes `matchingConfigVersion`. _(verified for the public v2 `discover()` path; the legacy v1 `search()` key builder is still in `search.service.ts` but is not used by the controller)_
 
-**Verification status (2026-10-31): Checkpoint 1-A is NOT closed.** Three boxes remain open. Their wording was rewritten on 2026-10-31 to point at the work that now owns them (struck-through text is the original criterion, kept for history). The `noMatchReasons` box was closed the same day by the product owner accepting the supersession.
+**Status (2026-11-01): Checkpoint 1-A is complete for T1.01–T1.14, confirmed by the product owner.** The rescope makes T1.14 (pending request creation) part of Phase 1A, and moves the three acceptance-time items below to Checkpoint 1-B, because T1.16 and T1.17 own them. Native-device checks for T1.12, T1.13 and A1.04 are confirmed.
 
-- _Search is advisory / atomic acceptance, `40001` retry, shared vectors in NestJS:_ owned by Phase 1B **T1.16** (atomic acceptance) and **T1.17** (concurrency proof). They close when those tasks pass, not before.
-- Also outstanding for Phase 1A exit (not checkboxes):
-  - Native-device verification of T1.12 and T1.13 (T1.14 is complete) and A1.04.
-  - CI on Node 22 / Python 3.12: to be run by the product owner after pushing.
-  - Deployment of the pending-request and operating-city migrations beyond local databases: they apply only through the CD pipeline, and its staging job has no migration step (see `tasks/T1.13-T1.14-progress.md`, "Migration rollout").
-  - Human sign-off on the doubt-driven review.
+Moved to Checkpoint 1-B (rescoped 2026-11-01; struck-through text is the original criterion):
+
+- [ ] ~~T1.14 atomic revalidation proves search results are advisory, not reservations.~~ **Replaced by:** search and pending requests reserve nothing, proven for creation by the T1.14 non-reservation tests and the 2026-10-31 live check (no billing, runs, assignments or slots; seat capacity and roster versions unchanged); and proven for acceptance by **T1.16** (atomic acceptance) and **T1.17** (concurrency proof: 50 acceptances for one seat, first-acceptance races, cross-driver duplicate rider). Close when T1.17 passes.
+- [ ] ~~T1.14 serialization retry is tested (AD-12).~~ **Replaced by:** the amended retry rule in **T1.16**: lock the driver and rider commitment rows in a consistent order inside a `SERIALIZABLE` transaction, retry at most three times after the initial attempt on `SQLSTATE 40001` with jitter, and return `409 RACE_CONFLICT` when retries are exhausted or the proposal is stale (not `ELIGIBILITY_CHANGED`). Needs a bounded-retry test in T1.16. Close when that test passes.
+- [ ] ~~Cross-language eligibility test vectors (`packages/contracts/test-vectors/eligibility.json`) pass in both Python and NestJS (AD-11).~~ **Replaced by:** shared fixtures for the amended rules. `packages/contracts/test-vectors/service-area-v2.json` is already used by the Zod tests (`packages/contracts/src/service-area.test.ts`) and the Python tests (`apps/matching/tests/test_service_area_contracts.py`). Still to do: add acceptance-time vectors (discovery, ranking and feasibility cases) and run them in the NestJS acceptance service as part of **T1.16**. `eligibility.json` stays as the historical v1 fixture and passes in Python and contracts only. Close when T1.16 runs the shared vectors.
+
+Still open, not gating 1-A:
+
+- **CI typecheck:** the first CI run failed `@routeride/mobile-driver` `typecheck` with TS2883 on the `AuthLayout`, `OnboardingLayout` and `RootLayout` default exports. Not yet reproduced locally; fix awaiting approval.
+- **CI on Node 22 / Python 3.12:** a green run is still needed.
+- **Migration rollout:** the pending-request and operating-city migrations are applied only through the CD pipeline, and its staging job has no migration step (see `tasks/T1.13-T1.14-progress.md`, "Migration rollout"). Deferred by the product owner.
+- **Doubt-driven review:** findings F1–F7 need owner decisions. None blocks 1-A.
 
 ---
 

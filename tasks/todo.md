@@ -480,13 +480,13 @@ do not assume a default command.
   - **Verify:** Component tests for the defaults, validation blocks, and loading state; keyboard and screen-reader pass.
   - **Files:** `apps/mobile-consumer/app/(app)/search/index.tsx`, `apps/mobile-consumer/app/(app)/search/index.test.tsx`
   - **Skills:** frontend-ui-engineering, test-driven-development
-- [ ] **T1.12 — Search results and driver card (mobile)** · `M` · deps: T1.11
+- [x] **T1.12 — Search results and driver card (mobile)** · `M` · deps: T1.11 _(device-verified by the product owner, 2026-11-01)_
   - **Do:** A ranked result list with a driver card showing name, photo, vehicle, rating with review count, current riders against capacity, estimated pickup time, pickup distance, verification tier, and monthly price. Distinct empty state for "no eligible driver", error state with retry, and a skeleton list while loading.
   - **Accept:** The no-match state explains _why_ nothing matched and offers a concrete next action (widen time, change days) rather than a dead end; price is formatted from integer cents with the currency; rating is never rendered as a bare `null`; the list is virtualised.
   - **Verify:** Component tests for populated, empty, error, and loading states; a snapshot of the price formatter across currencies; accessibility pass on the card.
   - **Files:** `apps/mobile-consumer/app/(app)/search/results.tsx`, `packages/ui/src/components/DriverCard.tsx`, `packages/ui/src/components/DriverCard.test.tsx`
   - **Skills:** frontend-ui-engineering, test-driven-development
-- [ ] **T1.13 — Driver profile screen (mobile)** · `S` · deps: T1.12
+- [x] **T1.13 — Driver profile screen (mobile)** · `S` · deps: T1.12 _(device-verified by the product owner, 2026-11-01)_
   - **Do:** Full driver detail: photo, vehicle details, plate, verification tier and what it means, rating distribution, verified reviews list with pagination, and the corridor overlap drawn on a map.
   - **Accept:** Reviews paginate; the map shows the driver's route and the rider's two points without exposing any other rider's data; the verification tier links to an explanation of what was checked.
   - **Verify:** Component tests; a test asserting the response contains no other rider's identifiers; accessibility pass.
@@ -495,7 +495,7 @@ do not assume a default command.
 
 ### ✅ Checkpoint 1-A — discovery works and is fast enough
 
-> **Status 2026-10-31: evidence recorded for these six items; Phase 1A is not closed.** The fuller checklist in [PHASE1A.md](PHASE1A.md#checkpoint-1-a--discovery-works-and-is-fast-enough) still has four open boxes (`noMatchReasons` mapping, T1.14 atomic revalidation, its `40001` retry, cross-language vectors in NestJS), plus native-device verification for T1.12/T1.13/T1.14/A1.04, CI on Node 22 / Python 3.12, migration deployment and human sign-off. T1.12–T1.14 below stay unchecked until those gates are recorded.
+> **Status 2026-11-01: Phase 1A complete (T1.01–T1.14), confirmed by the product owner.** Native-device checks for T1.12, T1.13 and A1.04 are confirmed. The three acceptance-time items (atomic revalidation, `40001` retry, shared vectors in NestJS) moved to Checkpoint 1-B because T1.16/T1.17 own them. Still open and not gating 1-A: the CI typecheck failure in `@routeride/mobile-driver` (TS2883 on three layout exports; awaiting a fix decision), a green CI run on Node 22 / Python 3.12, migration rollout beyond local databases (release step, deferred by the product owner), and the owner decisions in the [doubt-driven review](PHASE1A-eligibility-doubt-review.md) (findings F1–F7). Details: [PHASE1A.md](PHASE1A.md#checkpoint-1-a--discovery-works-and-is-fast-enough).
 
 - [x] A parent searches and gets a deterministic, ranked list of genuinely eligible drivers _(amended v2 discovery; ranking/pagination property tests)_
 - [x] Every hard filter has a failing-then-passing test, including the round-trip return leg _(29 source mutations all killed; see [doubt-driven review](PHASE1A-eligibility-doubt-review.md))_
@@ -578,6 +578,9 @@ do not assume a default command.
 
 ### ✅ Checkpoint 1-B — the core promise holds under concurrency
 
+- [ ] Acceptance is atomic: search and pending requests reserve nothing; acceptance rechecks the snapshot under lock (`T1.16`, `T1.17`; moved from 1-A on 2026-11-01)
+- [ ] Serialization retry: `SERIALIZABLE` with at most three retries on `40001`, then `409 RACE_CONFLICT` (`T1.16`; moved from 1-A)
+- [ ] Shared eligibility vectors (`service-area-v2.json`) run in the NestJS acceptance service (`T1.16`; moved from 1-A)
 - [ ] Discovery → request → accept works end to end on real devices, both roles
 - [ ] 50 concurrent acceptances on the last seat produce exactly one `ACTIVE` subscription, zero orphan slots
 - [ ] Preview and acceptance agree for the same versioned snapshot; stale previews require revalidation

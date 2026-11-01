@@ -13,9 +13,10 @@
  * (Settings → My Route), so step3-route has been removed from this flow.
  */
 import { Redirect, Stack } from "expo-router";
+import type { JSX } from "react";
 import { colors, useAuthStore, type AuthState } from "@routeride/ui";
 
-export default function OnboardingLayout() {
+export default function OnboardingLayout(): JSX.Element {
   const accessToken = useAuthStore((s: AuthState) => s.accessToken);
 
   if (!accessToken) {
