@@ -60,6 +60,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # TEMPORARY diagnostics for the mobile-driver TS2883 failure (@types/react resolution). Remove after the root cause is fixed.
+      - name: Debug @types/react resolution (mobile-driver)
+        run: |
+          echo "--- pnpm why"; pnpm --filter @routeride/mobile-driver why @types/react --depth 4 || true
+          cd apps/mobile-driver
+          echo "--- tsc version"; npx tsc -v
+          echo "--- resolved @types/react"; node -p "require.resolve('@types/react/package.json')" || true
+          node -p "require('@types/react/package.json').version" || true
+          echo "--- node_modules/@types"; ls -la node_modules/@types/ || true
+          echo "--- tsc explainFiles (react types)"; npx tsc --noEmit --explainFiles 2>&1 | grep -i "types/react/index.d.ts" | head -20 || true
+          echo "--- tsc explainFiles (JSX entries)"; npx tsc --noEmit --explainFiles 2>&1 | grep -i "@types/react" | head -40 || true
+
       - name: Type-check (TypeScript)
         run: pnpm turbo typecheck
 
